@@ -14,7 +14,9 @@ export const WIDGET_NAME = 'ProximasFechas';
 
 /** Cuántas filas entran según el alto del widget (en dp). */
 function rowsFor(info: WidgetInfo): number {
-  return Math.max(1, Math.min(5, Math.floor((info.height - 44) / 52)));
+  // Cada fila ocupa ~72dp con su separación. En el celular de prueba (Samsung, 4×2) con 52 entraban
+  // tres filas y la tercera salía aplastada, sin la fecha: mejor mostrar solo las que entran enteras.
+  return Math.max(1, Math.min(5, Math.floor((info.height - 44) / 72)));
 }
 
 /**
