@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Política de privacidad de Memora, la app para acordarte de cumpleaños y fechas importantes.">
+<link rel="icon" href="/favicon.png">
+<title>Política de privacidad · Memora</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap">
+<style>
+  /* Una columna de lectura, con la identidad de la app: arena, terracota y piedritas orgánicas. */
+  :root {
+    --bg: #E9DFCF;
+    --surface: #F3EBDF;
+    --text: #3D3229;
+    --muted: #857767;
+    --line: #D8CAB5;
+    --accent: #B56E4D;
+    --accent-soft: #E8CDBA;
+    --sans: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1F1B17; --surface: #282320; --text: #F0E8DC; --muted: #A99D8F;
+      --line: #3A332D; --accent: #D49A7E; --accent-soft: #3D2E26; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1F1B17; --surface: #282320; --text: #F0E8DC; --muted: #A99D8F;
+    --line: #3A332D; --accent: #D49A7E; --accent-soft: #3D2E26; color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    padding-inline: 1.25rem;
+    padding-block: 2.5rem 4rem;
+  }
+  main { max-width: 40rem; margin-inline: auto; display: flex; flex-direction: column; gap: 2.25rem; }
+
+  header { display: flex; align-items: center; gap: 1rem; }
+  .mark { width: 3.25rem; height: 3.25rem; flex: none; }
+  .brand { font-weight: 800; font-size: 1.25rem; letter-spacing: -0.02em; }
+  .kicker { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+
+  h1 { font-size: clamp(2rem, 6vw, 2.75rem); line-height: 1.1; letter-spacing: -0.035em; font-weight: 800; margin: 0; text-wrap: balance; }
+  h2 { font-size: 1.25rem; letter-spacing: -0.02em; font-weight: 800; margin: 0 0 0.5rem; text-wrap: balance; }
+  p, ul { margin: 0; }
+  p + p, p + ul, ul + p { margin-top: 0.75rem; }
+  ul { padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.4rem; }
+  li::marker { color: var(--accent); }
+  strong { font-weight: 700; }
+  .updated { color: var(--muted); font-size: 0.9375rem; margin-top: 0.5rem; }
+
+  .summary {
+    background: var(--accent-soft);
+    border-radius: 1.6rem 1.3rem 1.8rem 1.1rem;
+    padding: 1.4rem 1.5rem;
+    font-size: 1.125rem;
+    line-height: 1.55;
+  }
+
+  .perms { display: grid; gap: 0.75rem; margin-top: 0.25rem; padding: 0; list-style: none; }
+  .perms li { background: var(--surface); border: 1px solid var(--line); border-radius: 1rem; padding: 0.9rem 1.1rem; }
+  .perms b { display: block; font-weight: 700; }
+  .perms span { color: var(--muted); font-size: 0.975rem; }
+
+  footer { border-top: 1px solid var(--line); padding-top: 1.25rem; color: var(--muted); font-size: 0.9375rem; }
+  a { color: var(--accent); text-underline-offset: 3px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <svg class="mark" viewBox="10.9 14 92 88.3" aria-hidden="true">
+      <path d="M60 14c20 0 38 13 42 32s-6 40-24 50-42 8-56-6S8 52 18 34 40 14 60 14z" fill="var(--accent)"/>
+      <path d="M56.9 33.15C59.4 49.65 63.4 55.65 81.9 58.15C63.4 60.65 59.4 66.65 56.9 83.15C54.4 66.65 50.4 60.65 31.9 58.15C50.4 55.65 54.4 49.65 56.9 33.15Z" fill="var(--surface)"/>
+    </svg>
+    <div>
+      <div class="brand">memora</div>
+      <div class="kicker">Política de privacidad</div>
+    </div>
+  </header>
+
+  <section>
+    <h1>Tus fechas quedan en tu teléfono</h1>
+    <p class="updated">Última actualización: 3 de octubre de 2026</p>
+  </section>
+
+  <p class="summary">
+    <strong>Memora no recolecta, no envía y no vende tus datos.</strong>
+    Todo lo que cargás queda guardado en tu teléfono. La app no tiene cuentas de usuario, servidores propios, publicidad ni herramientas de análisis.
+  </p>
+
+  <section>
+    <h2>Qué guarda la app</h2>
+    <p>En tu teléfono, y solo ahí, Memora guarda lo que vos cargás:</p>
+    <ul>
+      <li>Nombres, fechas y el tipo de cada fecha.</li>
+      <li>Teléfonos, gustos, notas e ideas de regalo, si los agregás.</li>
+      <li>Fotos y textos de los recuerdos, si los agregás.</li>
+      <li>Tus preferencias: tema, horario de los avisos, etiquetas y mensajes de saludo.</li>
+    </ul>
+    <p>Si desinstalás la app, esta información se borra.</p>
+  </section>
+
+  <section>
+    <h2>Permisos y para qué se usan</h2>
+    <ul class="perms">
+      <li><b>Notificaciones</b><span>Para avisarte de las fechas. Los avisos se generan en el teléfono.</span></li>
+      <li><b>Contactos, solo lectura</b><span>Únicamente si elegís "Importar desde contactos". Memora lee nombres, teléfonos y fechas de cumpleaños y aniversarios para que elijas cuáles sumar. No modifica tus contactos ni los envía a ningún lado.</span></li>
+      <li><b>Fotos</b><span>Únicamente cuando elegís una foto para un recuerdo, con el selector de Android. La app solo accede a la foto que elegís.</span></li>
+      <li><b>Huella o PIN</b><span>Si activás el bloqueo. La verificación la hace Android; Memora no tiene acceso a tu huella.</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Respaldos</h2>
+    <p><strong>Respaldo manual.</strong> Cuando tocás "Exportar respaldo", la app crea un archivo con tus datos y abre el menú Compartir de Android. Vos elegís dónde guardarlo, por ejemplo en Google Drive. Ese archivo queda bajo tu control.</p>
+    <p><strong>Copia de seguridad de Android.</strong> Si la tenés activada en tu teléfono, Android puede incluir los datos de Memora en la copia de seguridad de tu cuenta de Google, como con cualquier otra app. Eso lo maneja Google según tu configuración, no Memora.</p>
+  </section>
+
+  <section>
+    <h2>Saludos, tarjetas y widget</h2>
+    <p>Cuando tocás "Saludar" (WhatsApp, SMS o llamada) o compartís una tarjeta, Memora abre la app que elijas con el mensaje o la imagen listos. El envío lo hacés vos desde esa app; Memora no envía nada por su cuenta.</p>
+    <p>El widget de la pantalla de inicio muestra tus próximas fechas leyendo los datos guardados en el teléfono.</p>
+  </section>
+
+  <section>
+    <h2>Menores de edad</h2>
+    <p>Memora no está dirigida a menores de 13 años y no recolecta información de nadie.</p>
+  </section>
+
+  <section>
+    <h2>Cambios en esta política</h2>
+    <p>Si esta política cambia, la nueva versión se publica en esta misma página con la fecha actualizada.</p>
+  </section>
+
+  <footer>
+    Por dudas sobre esta política, escribinos desde la sección de contacto de Memora en Google Play.
+  </footer>
+</main>
+</body>
+</html>
