@@ -38,6 +38,7 @@ Leyenda: ✅ hecho · 🚧 en curso · ⏳ más adelante · ❌ descartado
 ## Próximo (pedido el 4/10/2026)
 - ⏳ "memora" en minúscula en el título del inicio (como en la animación de entrada y la tarjeta).
 - ⏳ Idiomas: español e inglés como mínimo, según el idioma del teléfono y con opción en Ajustes. Implica sacar todos los textos a archivos de traducción (pantallas, avisos, widget, plantillas de saludo, nombres de meses y días, formatos de fecha) y traducir la ficha de Play Store. Evaluar portugués (Brasil es un mercado grande) en una segunda etapa.
+- ⏳ Sección "Notas", al estilo Google Keep: notas sueltas (no atadas a una fecha), con título opcional, colores, fijar arriba, buscar y, quizás, listas con casillas. Definir si va como pestaña nueva y si entra en el respaldo.
 
 ## Más adelante
 - ⏳ Pedir reseña en Play Store después de un tiempo de uso.
