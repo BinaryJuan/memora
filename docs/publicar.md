@@ -44,7 +44,7 @@ La primera vez, el `.aab` se sube a mano en Play Console. Después se puede auto
 
 - **Ícono 512×512:** [`store-assets/icono-512.png`](../store-assets/icono-512.png).
 - **Imagen destacada 1024×500:** [`store-assets/imagen-destacada-1024x500.png`](../store-assets/imagen-destacada-1024x500.png).
-- **Capturas:** 6 listas en [`store-assets/capturas/`](../store-assets/capturas/) (1080×1920, con título). Las originales sin título están en `store-assets/raw/`.
+- **Capturas:** 7 en español en [`store-assets/capturas/`](../store-assets/capturas/) y 7 en inglés en [`store-assets/capturas-en/`](../store-assets/capturas-en/) (1080×1920, con título). Las originales sin título están en `store-assets/raw/` y `raw-en/`.
 - **Descripción corta** (80 caracteres como máximo):
   > Cumpleaños, aniversarios y fechas importantes, con avisos a tiempo.
 - **Descripción larga** (borrador):
