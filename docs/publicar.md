@@ -64,7 +64,7 @@ La primera vez, el `.aab` se sube a mano en Play Console. Después se puede auto
 ## 5. Formularios de Play Console
 
 - **Seguridad de los datos:** la app **no recolecta ni comparte datos** (nada sale del teléfono). Marcá que no recolecta datos.
-- **Permisos:** la app pide notificaciones, contactos (solo lectura), huella y vibración. Los demás que traían las librerías (cámara, micrófono, almacenamiento, escribir contactos) están bloqueados en `app.json`.
+- **Permisos:** la app pide notificaciones, alarmas exactas ("Alarmas y recordatorios", para que los avisos no se atrasen; la persona lo activa), contactos (solo lectura), huella y vibración. Los demás que traían las librerías (cámara, micrófono, almacenamiento, escribir contactos) están bloqueados en `app.json`.
 - **Clasificación de contenido:** completar el cuestionario; no tiene contenido sensible.
 - **Público objetivo:** mayores de 13 años. Si marcás menores, aplican las reglas de apps para familias, que son mucho más estrictas.
 - **Anuncios:** no tiene.

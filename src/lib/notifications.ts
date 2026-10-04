@@ -2,10 +2,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as IntentLauncher from 'expo-intent-launcher';
 import * as Notifications from '@/lib/notifications-api';
-import { Linking, Platform } from 'react-native';
+import { Alert, Linking, Platform } from 'react-native';
 
+import { canScheduleExactAlarms } from '../../modules/memora-alarms';
 import { planAll, splitPlan, type Planned } from './notification-plan';
 import type { MemoraEvent, Settings, Tag } from './types';
+
+export { canScheduleExactAlarms };
 
 const CHANNEL_ID = 'recordatorios';
 /** Avisos del día de una persona: traen el botón "Saludar por WhatsApp". */
@@ -15,6 +18,8 @@ export const GREET_ACTION = 'saludar-whatsapp';
 const MAX_SCHEDULED = 400;
 /** Claves de los avisos que ya quedaron programados o avisados (ver `splitPlan`). */
 const HANDLED_KEY = 'memora-avisos';
+/** Ya se explicó una vez lo del permiso de alarmas exactas. */
+const ASKED_EXACT_KEY = 'memora-alarmas-preguntado';
 const supported = Platform.OS !== 'web';
 
 export function setupNotifications() {
@@ -103,8 +108,33 @@ export function rescheduleAll(events: MemoraEvent[], tags: Tag[], settings: Sett
 /**
  * Desde Android 12 las alarmas "a la hora exacta" necesitan un permiso aparte, y desde Android 14
  * viene apagado. Sin él, Android puede atrasar los avisos (a veces horas) para ahorrar batería.
+ * `true` solo cuando Android confirma que falta (en Expo Go no se puede saber).
  */
-export const exactAlarmsConfigurable = Platform.OS === 'android' && Number(Platform.Version) >= 31;
+export function exactAlarmsMissing(): boolean {
+  return Platform.OS === 'android' && canScheduleExactAlarms() === false;
+}
+
+/** La primera vez que hace falta, explica el permiso de alarmas y ofrece abrir la pantalla para darlo. */
+export async function askExactAlarmsOnce(): Promise<void> {
+  if (!exactAlarmsMissing()) return;
+  try {
+    if (await AsyncStorage.getItem(ASKED_EXACT_KEY)) return;
+    await AsyncStorage.setItem(ASKED_EXACT_KEY, '1');
+  } catch {
+    return;
+  }
+  await new Promise<void>((resolve) => {
+    Alert.alert(
+      'Avisos a horario',
+      'Android puede atrasar los avisos para ahorrar batería. Para que lleguen a la hora justa, permití «Alarmas y recordatorios» para Memora.',
+      [
+        { text: 'Ahora no', style: 'cancel', onPress: () => resolve() },
+        { text: 'Permitir', onPress: () => void openExactAlarmSettings().finally(resolve) },
+      ],
+      { cancelable: true, onDismiss: () => resolve() },
+    );
+  });
+}
 
 /** Abre la pantalla de "Alarmas y recordatorios" de Memora. Se resuelve cuando la persona vuelve. */
 export async function openExactAlarmSettings() {

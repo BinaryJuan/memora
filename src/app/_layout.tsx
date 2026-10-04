@@ -19,7 +19,7 @@ import { Button, T } from '@/components/ui';
 import { dateKey, yearsAt } from '@/lib/dates';
 import { fillTemplate } from '@/lib/events';
 import { greet } from '@/lib/media';
-import { GREET_ACTION, rescheduleAll, setupNotifications } from '@/lib/notifications';
+import { canScheduleExactAlarms, GREET_ACTION, rescheduleAll, setupNotifications } from '@/lib/notifications';
 import * as Notifications from '@/lib/notifications-api';
 import type { Settings } from '@/lib/types';
 import { useStore } from '@/store/store';
@@ -60,8 +60,13 @@ function useNotificationSync() {
       timer = setTimeout(run, 1200);
     });
     // …y al volver a la app, para ir sumando los avisos de los próximos años (como mucho una vez por hora).
+    let exact = canScheduleExactAlarms();
     const appSub = AppState.addEventListener('change', (st) => {
-      if (st === 'active' && Date.now() - lastRun > HOUR) run();
+      if (st !== 'active') return;
+      // Si se dio (o se quitó) el permiso de alarmas exactas, reprogramamos para que tome efecto ya.
+      const nowExact = canScheduleExactAlarms();
+      if (nowExact !== exact || Date.now() - lastRun > HOUR) run();
+      exact = nowExact;
     });
     return () => {
       unsub();

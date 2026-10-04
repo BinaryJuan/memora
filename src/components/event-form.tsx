@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { capitalize, clampDate, isValidDate, MONTHS, startOfDay } from '@/lib/dates';
-import { ensurePermission } from '@/lib/notifications';
+import { askExactAlarmsOnce, ensurePermission } from '@/lib/notifications';
 import { getKind, KINDS, offsetsSummary, RECURRENCES } from '@/lib/kinds';
 import type { KindId, MemoraEvent, Recurrence } from '@/lib/types';
 import { digitsOnly, isValidPhone, LIMITS, MAX_YEAR, MIN_YEAR } from '@/lib/validation';
@@ -94,8 +94,9 @@ export function EventForm({ initial, defaults, onSaved }: Props) {
     } else {
       id = addEvent(data);
     }
-    // La primera vez que se guarda algo pedimos permiso para avisar.
-    if (settings.notificationsEnabled) await ensurePermission().catch(() => false);
+    // La primera vez que se guarda algo pedimos permiso para avisar
+    // y, si Android lo pide, permiso para que los avisos lleguen a horario.
+    if (settings.notificationsEnabled && (await ensurePermission().catch(() => false))) await askExactAlarmsOnce();
     onSaved(id);
   };
 

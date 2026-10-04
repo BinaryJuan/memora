@@ -1,0 +1,15 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'ar.com.memora'
+version = '1.0.0'
+
+android {
+  namespace "ar.com.memora.alarms"
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+  }
+}

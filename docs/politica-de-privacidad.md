@@ -1,6 +1,6 @@
 # Política de privacidad de Memora
 
-Última actualización: 3 de octubre de 2026
+Última actualización: 4 de octubre de 2026
 
 Memora es una app para anotar cumpleaños, aniversarios y otras fechas. Esta política explica qué pasa con tu información cuando la usás.
 
@@ -22,6 +22,7 @@ Si desinstalás la app, esta información se borra.
 ## Permisos que usa y para qué
 
 - **Notificaciones:** para avisarte de las fechas. Los avisos se generan en el teléfono.
+- **Alarmas y recordatorios:** si lo permitís, para que los avisos lleguen a la hora exacta y Android no los atrase.
 - **Contactos (solo lectura):** únicamente si elegís "Importar desde contactos". Memora lee nombres, teléfonos y fechas de cumpleaños y aniversarios para que elijas cuáles sumar. No modifica tus contactos ni los envía a ningún lado.
 - **Fotos:** únicamente cuando elegís una foto para un recuerdo, usando el selector de Android. La app solo accede a la foto que elegís.
 - **Huella o PIN:** si activás el bloqueo. La verificación la hace Android; Memora no tiene acceso a tu huella.

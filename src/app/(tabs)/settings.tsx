@@ -1,5 +1,6 @@
 import * as LocalAuthentication from 'expo-local-authentication';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Alert, Platform, View } from 'react-native';
 
 import { authenticate } from '@/components/lock-gate';
@@ -8,9 +9,8 @@ import { Card, Divider, IconButton, PageTitle, Row, Screen, Section, Segmented, 
 import { deletePhoto, exportBackup, pickBackup } from '@/lib/media';
 import {
   ensurePermission,
-  exactAlarmsConfigurable,
+  exactAlarmsMissing,
   openExactAlarmSettings,
-  rescheduleAll,
   sendTestNotification,
 } from '@/lib/notifications';
 import type { BackupData, ThemeMode } from '@/lib/types';
@@ -25,6 +25,9 @@ function formatHour(h: number): string {
 export default function SettingsScreen() {
   const settings = useStore((s) => s.settings);
   const update = useStore((s) => s.updateSettings);
+  // Se vuelve a mirar al entrar a esta pestaña: el permiso se puede cambiar desde los ajustes del teléfono.
+  const [exactMissing, setExactMissing] = useState(exactAlarmsMissing);
+  useFocusEffect(useCallback(() => setExactMissing(exactAlarmsMissing()), []));
 
   const toggleNotifications = async (on: boolean) => {
     if (on && !(await ensurePermission())) {
@@ -109,10 +112,9 @@ export default function SettingsScreen() {
   };
 
   const fixTiming = async () => {
+    // Al volver, si se dio el permiso, los avisos se reprograman solos (ver `_layout.tsx`).
     await openExactAlarmSettings();
-    // Si dio el permiso, los avisos ya programados se vuelven a programar, ahora a la hora exacta.
-    const { events, tags, settings } = useStore.getState();
-    rescheduleAll(events, tags, settings);
+    setExactMissing(exactAlarmsMissing());
   };
 
   return (
@@ -185,13 +187,13 @@ export default function SettingsScreen() {
                   <Row icon="send" title="Probar un aviso" subtitle="Llega en 3 segundos" onPress={testNotification} />
                 </>
               ) : null}
-              {exactAlarmsConfigurable ? (
+              {exactMissing ? (
                 <>
                   <Divider />
                   <Row
                     icon="watch"
                     title="Avisos a la hora justa"
-                    subtitle="Si te llegan tarde, activá «Alarmas y recordatorios»"
+                    subtitle="Android puede atrasarlos. Tocá para permitir «Alarmas y recordatorios»"
                     onPress={fixTiming}
                   />
                 </>

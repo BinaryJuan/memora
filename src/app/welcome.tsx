@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { IconBadge, type IconKey } from '@/components/icon';
 import { Button, T } from '@/components/ui';
-import { ensurePermission } from '@/lib/notifications';
+import { askExactAlarmsOnce, ensurePermission } from '@/lib/notifications';
 import { useStore } from '@/store/store';
 import { Radius, Space, useTheme } from '@/theme/theme';
 
@@ -55,7 +55,7 @@ export default function WelcomeScreen() {
   };
 
   const enableNotifications = async () => {
-    if (Platform.OS !== 'web') await ensurePermission().catch(() => false);
+    if (Platform.OS !== 'web' && (await ensurePermission().catch(() => false))) await askExactAlarmsOnce();
     goTo(index + 1);
   };
 
