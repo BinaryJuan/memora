@@ -35,6 +35,10 @@ Leyenda: ✅ hecho · 🚧 en curso · ⏳ más adelante · ❌ descartado
 - ✅ "Deshacer" al borrar fechas, recuerdos e ideas de regalo.
 - ✅ Widget "Próximas fechas" para la pantalla de inicio. Solo en la app compilada (en Expo Go no existe).
 
+## Próximo (pedido el 4/10/2026)
+- ⏳ "memora" en minúscula en el título del inicio (como en la animación de entrada y la tarjeta).
+- ⏳ Idiomas: español e inglés como mínimo, según el idioma del teléfono y con opción en Ajustes. Implica sacar todos los textos a archivos de traducción (pantallas, avisos, widget, plantillas de saludo, nombres de meses y días, formatos de fecha) y traducir la ficha de Play Store. Evaluar portugués (Brasil es un mercado grande) en una segunda etapa.
+
 ## Más adelante
 - ⏳ Pedir reseña en Play Store después de un tiempo de uso.
 - ⏳ Repetición "cada semana".

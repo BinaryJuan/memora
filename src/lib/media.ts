@@ -1,5 +1,6 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
+import * as IntentLauncher from 'expo-intent-launcher';
 import * as Sharing from 'expo-sharing';
 import { Alert, Linking, Platform } from 'react-native';
 
@@ -112,9 +113,23 @@ function cleanPhone(phone: string): string {
 export async function greet(channel: GreetChannel, phone: string | undefined, message: string) {
   const p = phone ? cleanPhone(phone) : '';
   const text = message.trim();
+  // Sin teléfono ni mensaje, WhatsApp no tiene nada para compartir: abre el selector de chats y lo
+  // cierra enseguida con un aviso. En ese caso abrimos WhatsApp directamente, para escribir a mano.
+  if (channel === 'whatsapp' && !p && !text && Platform.OS === 'android') {
+    for (const pkg of ['com.whatsapp', 'com.whatsapp.w4b']) {
+      try {
+        await IntentLauncher.openApplication(pkg);
+        return;
+      } catch {
+        // No está instalado: probamos el siguiente.
+      }
+    }
+    Alert.alert('No se pudo abrir', 'Revisá que WhatsApp esté instalado en el teléfono.');
+    return;
+  }
   let url: string;
   if (channel === 'whatsapp') {
-    // Sin teléfono, WhatsApp deja elegir el chat. Sin mensaje, solo abre el chat para escribir a mano.
+    // Sin teléfono, WhatsApp deja elegir el chat para el mensaje. Sin mensaje, abre el chat para escribir a mano.
     const base = p ? `https://wa.me/${p.replace('+', '')}` : 'whatsapp://send';
     url = text ? `${base}?text=${encodeURIComponent(text)}` : base;
   } else if (channel === 'sms') {
