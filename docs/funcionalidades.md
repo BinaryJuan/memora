@@ -43,7 +43,7 @@ Leyenda: ✅ hecho · 🚧 en curso · ⏳ más adelante · ❌ descartado
 - ✅ **Sonido los días de cumple**: al entrar a la app, si hay un cumpleaños hoy, suenan tres notas que suben (assets/sounds/cumple.mp3, hecho por código). Suena una vez por cumpleaños por día: al volver a entrar no se repite, salvo que aparezca otro cumpleaños ese día. Nunca con el teléfono en silencio o vibración (en ese caso suena la próxima vez que se entre con sonido) y sin cortar la música. Se apaga en Ajustes.
 
 ## Próximo
-- 🐞 **El widget se ve transparente** en el Samsung (Android 16). Registrar la tarea antes de `expo-router/entry` no alcanzó. Próximo paso: celular por USB, agregar el widget y leer `adb logcat` (filtrar por `RNWidget`, `ReactNativeJS`, `AndroidRuntime`) para ver si la tarea corre, si falla el dibujo o si el ancho llega en 0. `adb` quedó en `../herramientas/platform-tools`.
+- ✅ **El widget se veía transparente**: el log del celular mostró que el React Compiler transformaba los componentes del widget y la librería no lo soporta. Se desactiva el compilador en `src/widget/` con `'use no memo'`.
 - ⏳ Portugués (Brasil es un mercado grande): alcanza con sumar `src/i18n/pt.ts` y agregarlo en `core.ts`.
 - ⏳ Notas con listas de casillas (como las de Keep).
 

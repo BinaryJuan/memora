@@ -1,3 +1,7 @@
+// El widget no es una pantalla de React: la librería recorre los componentes como funciones comunes,
+// y lo que agrega el React Compiler (memoria en caché) la rompe. Por eso se desactiva acá.
+'use no memo';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { WidgetInfo, WidgetTaskHandlerProps } from 'react-native-android-widget';
 
