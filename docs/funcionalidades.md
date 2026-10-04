@@ -36,6 +36,7 @@ Leyenda: ✅ hecho · 🚧 en curso · ⏳ más adelante · ❌ descartado
 - ✅ Widget "Próximas fechas" para la pantalla de inicio. Solo en la app compilada (en Expo Go no existe).
 
 ## Próximo (pedido el 4/10/2026)
+- 🐞 **El widget se ve transparente** en el Samsung (Android 16). Registrar la tarea antes de `expo-router/entry` no alcanzó. Próximo paso: celular por USB, agregar el widget y leer `adb logcat` (filtrar por `RNWidget`, `ReactNativeJS`, `AndroidRuntime`) para ver si la tarea corre, si falla el dibujo o si el ancho llega en 0. `adb` quedó en `../herramientas/platform-tools`.
 - ⏳ "memora" en minúscula en el título del inicio (como en la animación de entrada y la tarjeta).
 - ⏳ Idiomas: español e inglés como mínimo, según el idioma del teléfono y con opción en Ajustes. Implica sacar todos los textos a archivos de traducción (pantallas, avisos, widget, plantillas de saludo, nombres de meses y días, formatos de fecha) y traducir la ficha de Play Store. Evaluar portugués (Brasil es un mercado grande) en una segunda etapa.
 - ⏳ Sección "Notas", al estilo Google Keep: notas sueltas (no atadas a una fecha), con título opcional, colores, fijar arriba, buscar y, quizás, listas con casillas. Va en la barra de abajo **en lugar de "Todas"**; la lista completa de fechas pasa a abrirse desde Inicio (un "Ver todas") o desde Calendario. Definir si entra en el respaldo (lo lógico es que sí).
