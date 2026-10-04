@@ -1,9 +1,10 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+import * as IntentLauncher from 'expo-intent-launcher';
 import * as Notifications from '@/lib/notifications-api';
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 
-import { addDays, formatShortDate, nextOccurrences, startOfDay, yearsAt } from './dates';
-import { effectiveOffsets } from './events';
-import { getKind } from './kinds';
+import { planAll, splitPlan, type Planned } from './notification-plan';
 import type { MemoraEvent, Settings, Tag } from './types';
 
 const CHANNEL_ID = 'recordatorios';
@@ -12,6 +13,8 @@ const GREET_CATEGORY = 'saludar';
 export const GREET_ACTION = 'saludar-whatsapp';
 /** Android permite ~500 alarmas por app: dejamos margen. */
 const MAX_SCHEDULED = 400;
+/** Claves de los avisos que ya quedaron programados o avisados (ver `splitPlan`). */
+const HANDLED_KEY = 'memora-avisos';
 const supported = Platform.OS !== 'web';
 
 export function setupNotifications() {
@@ -44,69 +47,23 @@ export async function ensurePermission(): Promise<boolean> {
   return res.granted;
 }
 
-interface Planned {
-  date: Date;
-  title: string;
-  body: string;
-  eventId?: string;
-  greet?: boolean;
+async function loadHandled(): Promise<string[]> {
+  try {
+    const raw = await AsyncStorage.getItem(HANDLED_KEY);
+    const list: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list.filter((k): k is string => typeof k === 'string') : [];
+  } catch {
+    return [];
+  }
 }
 
-function planForEvent(e: MemoraEvent, offsets: number[], hour: number, now: Date): Planned[] {
-  const kind = getKind(e.kind);
-  const count = e.recurrence === 'monthly' ? 3 : 2;
-  const out: Planned[] = [];
-  for (const occ of nextOccurrences(e, count, now)) {
-    const years = yearsAt(e, occ);
-    const yearsText = years && kind.yearsLabel ? kind.yearsLabel(years) : null;
-    for (const offset of offsets) {
-      const date = addDays(occ, -offset);
-      date.setHours(hour, 0, 0, 0);
-      if (date <= now) continue;
-      let title: string;
-      if (offset === 0) {
-        title = kind.person ? `Hoy es ${kind.phrase(e.title)} ${kind.emoji}` : `${kind.emoji} Hoy: ${e.title}`;
-      } else if (offset === 1) {
-        title = `Mañana: ${kind.phrase(e.title)}`;
-      } else {
-        title = `En ${offset} días: ${kind.phrase(e.title)}`;
-      }
-      const parts: string[] = [];
-      if (yearsText) parts.push(yearsText);
-      if (offset === 0 && kind.person) parts.push('¡No te olvides de saludar!');
-      if (offset > 0 && e.giftIdeas.length > 0 && kind.person) parts.push('Tenés ideas de regalo anotadas 🎁');
-      if (parts.length === 0) parts.push(kind.label);
-      out.push({ date, title, body: parts.join(' · '), eventId: e.id, greet: offset === 0 && kind.person });
-    }
-  }
-  return out;
-}
-
-function planWeeklySummaries(events: MemoraEvent[], hour: number, now: Date): Planned[] {
-  const out: Planned[] = [];
-  const today = startOfDay(now);
-  const toMonday = (8 - today.getDay()) % 7; // 0 si hoy es lunes
-  for (let w = 0; w < 6; w++) {
-    const monday = addDays(today, toMonday + w * 7);
-    const sunday = addDays(monday, 6);
-    const items: { date: Date; title: string }[] = [];
-    for (const e of events) {
-      for (const occ of nextOccurrences(e, 1, monday)) {
-        if (occ <= sunday) items.push({ date: occ, title: e.title });
-      }
-    }
-    if (items.length === 0) continue;
-    items.sort((a, b) => a.date.getTime() - b.date.getTime());
-    const date = new Date(monday);
-    date.setHours(hour, 0, 0, 0);
-    if (date <= now) continue;
-    out.push({
-      date,
-      title: items.length === 1 ? 'Esta semana tenés 1 fecha' : `Esta semana tenés ${items.length} fechas`,
-      body: items.map((i) => `${i.title} (${formatShortDate(i.date)})`).join(', '),
-    });
-  }
-  return out;
+function contentOf(p: Planned) {
+  return {
+    title: p.title,
+    body: p.body,
+    data: p.eventId ? { eventId: p.eventId } : {},
+    categoryIdentifier: p.greet ? GREET_CATEGORY : undefined,
+  };
 }
 
 let queue: Promise<void> = Promise.resolve();
@@ -123,29 +80,43 @@ export function rescheduleAll(events: MemoraEvent[], tags: Tag[], settings: Sett
       if (!perm.granted) return;
 
       const now = new Date();
-      const planned: Planned[] = [];
-      for (const e of events) {
-        planned.push(...planForEvent(e, effectiveOffsets(e, tags, settings), settings.notifyHour, now));
-      }
-      if (settings.weeklySummary) planned.push(...planWeeklySummaries(events, settings.notifyHour, now));
+      const plan = splitPlan(planAll(events, tags, settings, now), await loadHandled(), now, MAX_SCHEDULED);
 
-      planned.sort((a, b) => a.date.getTime() - b.date.getTime());
-      for (const p of planned.slice(0, MAX_SCHEDULED)) {
+      for (const p of plan.schedule) {
         await Notifications.scheduleNotificationAsync({
-          content: {
-            title: p.title,
-            body: p.body,
-            data: p.eventId ? { eventId: p.eventId } : {},
-            categoryIdentifier: p.greet ? GREET_CATEGORY : undefined,
-          },
+          content: contentOf(p),
           trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: p.date, channelId: CHANNEL_ID },
         });
       }
+      // Una fecha de hoy cargada después de la hora del aviso: avisamos ahora en vez de nunca.
+      for (const p of plan.catchUp) {
+        await Notifications.scheduleNotificationAsync({ content: contentOf(p), trigger: { channelId: CHANNEL_ID } });
+      }
+      await AsyncStorage.setItem(HANDLED_KEY, JSON.stringify(plan.handled));
     } catch (err) {
       console.warn('No se pudieron programar los avisos', err);
     }
   });
   return queue;
+}
+
+/**
+ * Desde Android 12 las alarmas "a la hora exacta" necesitan un permiso aparte, y desde Android 14
+ * viene apagado. Sin él, Android puede atrasar los avisos (a veces horas) para ahorrar batería.
+ */
+export const exactAlarmsConfigurable = Platform.OS === 'android' && Number(Platform.Version) >= 31;
+
+/** Abre la pantalla de "Alarmas y recordatorios" de Memora. Se resuelve cuando la persona vuelve. */
+export async function openExactAlarmSettings() {
+  const pkg = Constants.expoConfig?.android?.package ?? 'ar.com.memora.fechas';
+  try {
+    await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.REQUEST_SCHEDULE_EXACT_ALARM, {
+      data: `package:${pkg}`,
+    });
+  } catch {
+    // Algunos teléfonos no tienen esa pantalla suelta: la ficha de la app también trae la opción.
+    await Linking.openSettings().catch(() => {});
+  }
 }
 
 export async function sendTestNotification() {

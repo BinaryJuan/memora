@@ -31,15 +31,15 @@ export async function renderNextDates(info: WidgetInfo, events?: MemoraEvent[]) 
   return <NextDatesWidget items={list} rows={rowsFor(info)} />;
 }
 
+const DRAW_ACTIONS = new Set<WidgetTaskHandlerProps['widgetAction']>(['WIDGET_ADDED', 'WIDGET_UPDATE', 'WIDGET_RESIZED']);
+
 export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
-  if (props.widgetInfo.widgetName !== WIDGET_NAME) return;
-  switch (props.widgetAction) {
-    case 'WIDGET_ADDED':
-    case 'WIDGET_UPDATE':
-    case 'WIDGET_RESIZED':
-      props.renderWidget(await renderNextDates(props.widgetInfo));
-      break;
-    default:
-      break;
+  if (props.widgetInfo.widgetName !== WIDGET_NAME || !DRAW_ACTIONS.has(props.widgetAction)) return;
+  try {
+    props.renderWidget(await renderNextDates(props.widgetInfo));
+  } catch (err) {
+    // Nunca dejarlo vacío: si algo falla, al menos un cartel que lleve a la app.
+    console.warn('No se pudo dibujar el widget', err);
+    props.renderWidget(<NextDatesWidget items={[]} rows={1} fallback />);
   }
 }

@@ -8,6 +8,9 @@ import { Space, useTheme } from '@/theme/theme';
 import { IconBadge } from './icon';
 import { Button, T } from './ui';
 
+/** Si se vuelve a la app antes de este tiempo, no se pide la huella otra vez. */
+const GRACE_MS = 10_000;
+
 export async function authenticate(reason: string): Promise<boolean> {
   if (Platform.OS === 'web') return true;
   try {
@@ -34,9 +37,16 @@ export function LockGate({ children }: { children: ReactNode }) {
   const updateSettings = useStore((s) => s.updateSettings);
   const [locked, setLocked] = useState(enabled);
   const busy = useRef(false);
+  const leftAt = useRef<number | null>(null);
+  const lockedRef = useRef(locked);
+  useEffect(() => {
+    lockedRef.current = locked;
+  }, [locked]);
 
   const unlock = useCallback(async () => {
-    if (busy.current) return;
+    // El diálogo de huella solo tiene sentido con la app en pantalla: si se pide mientras la app
+    // se va al fondo, aparece un instante sobre el inicio del teléfono y se cierra solo.
+    if (busy.current || AppState.currentState !== 'active') return;
     busy.current = true;
     try {
       // Si el teléfono ya no tiene huella ni PIN, no hay forma de autenticar: apagamos el bloqueo
@@ -55,11 +65,26 @@ export function LockGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!enabled) return;
     const sub = AppState.addEventListener('change', (state) => {
-      // Mientras se muestra el diálogo de huella la app pasa a "inactive": solo bloqueamos en "background".
-      if (state === 'background') setLocked(true);
+      // Mientras se muestra el diálogo de huella la app pasa a "inactive": solo cuenta "background".
+      if (state === 'background') {
+        if (busy.current) return; // El PIN del teléfono abre otra pantalla: no es que la persona se fue.
+        leftAt.current = Date.now();
+        setLocked(true); // Tapa el contenido ya, pero sin pedir la huella todavía.
+      } else if (state === 'active') {
+        if (leftAt.current === null) {
+          // Al abrir en frío puede que la app todavía no estuviera "active" cuando se intentó pedir la huella.
+          if (lockedRef.current) unlock();
+          return;
+        }
+        const away = Date.now() - leftAt.current;
+        leftAt.current = null;
+        // Volver enseguida (de compartir, de elegir una foto o de WhatsApp) no pide la huella de nuevo.
+        if (away < GRACE_MS) setLocked(false);
+        else unlock();
+      }
     });
     return () => sub.remove();
-  }, [enabled]);
+  }, [enabled, unlock]);
 
   // Con el bloqueo activo, Android no muestra el contenido en "apps recientes" ni permite capturas.
   useEffect(() => {

@@ -58,6 +58,13 @@ describe('nextOccurrence', () => {
     expect(nextOccurrence(e, d(2026, 11, 16))).toBeNull();
   });
 
+  it('con un año que todavía no llegó, empieza ese día (por ejemplo, un casamiento que viene)', () => {
+    const boda = ev({ kind: 'anniversary', day: 12, month: 12, year: 2027 });
+    expect(nextOccurrence(boda, d(2026, 10, 4))).toEqual(d(2027, 12, 12));
+    expect(yearsAt(boda, d(2027, 12, 12))).toBeNull();
+    expect(yearsAt(boda, d(2028, 12, 12))).toBe(1);
+  });
+
   it('una sola vez muy en el futuro igual se encuentra', () => {
     const e = ev({ day: 1, month: 6, year: 2031, recurrence: 'once', kind: 'reminder' });
     expect(nextOccurrence(e, d(2026, 10, 3))).toEqual(d(2031, 6, 1));

@@ -311,9 +311,13 @@ export default function EventDetailScreen() {
 
   const sendWith = (text: string) => {
     if (!channel) return;
-    greet(channel, event.phone, fillTemplate(text, event, years));
-    if (isToday && !greeted) toggleGreeted(event.id, todayKey);
+    const ch = channel;
+    const message = text ? fillTemplate(text, event, years) : '';
+    // Primero se cierra la hoja y después se abre la otra app: si Android cambia de app con la hoja
+    // a medio cerrar, puede quedar una capa invisible que no deja tocar nada al volver.
     setChannel(null);
+    setTimeout(() => greet(ch, event.phone, message), 350);
+    if (isToday && !greeted) toggleGreeted(event.id, todayKey);
   };
 
   return (

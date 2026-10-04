@@ -6,7 +6,13 @@ import { authenticate } from '@/components/lock-gate';
 import { OffsetPicker } from '@/components/offset-picker';
 import { Card, Divider, IconButton, PageTitle, Row, Screen, Section, Segmented, SwitchRow, T } from '@/components/ui';
 import { deletePhoto, exportBackup, pickBackup } from '@/lib/media';
-import { ensurePermission, sendTestNotification } from '@/lib/notifications';
+import {
+  ensurePermission,
+  exactAlarmsConfigurable,
+  openExactAlarmSettings,
+  rescheduleAll,
+  sendTestNotification,
+} from '@/lib/notifications';
 import type { BackupData, ThemeMode } from '@/lib/types';
 import { BackupError } from '@/lib/validation';
 import { useStore } from '@/store/store';
@@ -102,6 +108,13 @@ export default function SettingsScreen() {
     await sendTestNotification();
   };
 
+  const fixTiming = async () => {
+    await openExactAlarmSettings();
+    // Si dio el permiso, los avisos ya programados se vuelven a programar, ahora a la hora exacta.
+    const { events, tags, settings } = useStore.getState();
+    rescheduleAll(events, tags, settings);
+  };
+
   return (
     <Screen>
       <PageTitle title="Ajustes" />
@@ -170,6 +183,17 @@ export default function SettingsScreen() {
                 <>
                   <Divider />
                   <Row icon="send" title="Probar un aviso" subtitle="Llega en 3 segundos" onPress={testNotification} />
+                </>
+              ) : null}
+              {exactAlarmsConfigurable ? (
+                <>
+                  <Divider />
+                  <Row
+                    icon="watch"
+                    title="Avisos a la hora justa"
+                    subtitle="Si te llegan tarde, activá «Alarmas y recordatorios»"
+                    onPress={fixTiming}
+                  />
                 </>
               ) : null}
             </>

@@ -111,12 +111,14 @@ function cleanPhone(phone: string): string {
 
 export async function greet(channel: GreetChannel, phone: string | undefined, message: string) {
   const p = phone ? cleanPhone(phone) : '';
+  const text = message.trim();
   let url: string;
   if (channel === 'whatsapp') {
-    const text = encodeURIComponent(message);
-    url = p ? `https://wa.me/${p.replace('+', '')}?text=${text}` : `https://wa.me/?text=${text}`;
+    // Sin teléfono, WhatsApp deja elegir el chat. Sin mensaje, solo abre el chat para escribir a mano.
+    const base = p ? `https://wa.me/${p.replace('+', '')}` : 'whatsapp://send';
+    url = text ? `${base}?text=${encodeURIComponent(text)}` : base;
   } else if (channel === 'sms') {
-    url = `sms:${p}?body=${encodeURIComponent(message)}`;
+    url = text ? `sms:${p}?body=${encodeURIComponent(text)}` : `sms:${p}`;
   } else {
     url = `tel:${p}`;
   }

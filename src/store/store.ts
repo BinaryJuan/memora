@@ -45,7 +45,8 @@ const DEFAULT_TEMPLATES: Template[] = [
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
   notificationsEnabled: true,
-  notifyHour: 9,
+  /** Medianoche: el aviso del mismo día llega apenas empieza, con todo el día por delante. */
+  notifyHour: 0,
   defaultOffsets: [0, 1, 7],
   weeklySummary: true,
   lockEnabled: false,
@@ -173,7 +174,7 @@ export const useStore = create<State>()(
     }),
     {
       name: 'memora-data',
-      version: 4,
+      version: 5,
       migrate: (persisted, version) => {
         const state = persisted as {
           tags?: Tag[];
@@ -186,6 +187,8 @@ export const useStore = create<State>()(
         if (version < 3 && state.events) state.events = state.events.map(({ photoUri: _photo, ...e }) => e);
         // v4: bienvenida nueva. Quien ya usaba la app no tiene por qué verla.
         if (version < 4) state.settings = { ...DEFAULT_SETTINGS, ...state.settings, onboarded: true };
+        // v5: los avisos pasan de las 9 a las 00:00. Solo se cambia si seguía el horario de antes.
+        if (version < 5 && state.settings?.notifyHour === 9) state.settings = { ...state.settings, notifyHour: 0 };
         return state as State;
       },
       // Ajustes nuevos que no estaban en lo guardado toman su valor por defecto.

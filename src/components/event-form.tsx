@@ -62,9 +62,6 @@ export function EventForm({ initial, defaults, onSaved }: Props) {
     if (!m) return;
     if (y !== undefined && (Number.isNaN(y) || y < MIN_YEAR || y > MAX_YEAR))
       return Alert.alert('Año inválido', 'Escribí el año con 4 cifras, o dejalo vacío.');
-    // Un cumple o un aniversario no puede haber empezado en el futuro.
-    if (y !== undefined && recurrence === 'yearly' && clampDate(y, m, d) > new Date() && (info.person || kind === 'memorial'))
-      return Alert.alert('Año inválido', 'Ese año todavía no llegó. Revisalo o dejalo vacío.');
     if (info.person && phone.trim() && !isValidPhone(phone.trim()))
       return Alert.alert('Teléfono inválido', 'Escribí solo números, con el código de país. Ej: +54 9 11 1234 5678.');
     if (recurrence === 'monthly' ? !(d >= 1 && d <= 31) : !isValidDate(d, m, y))

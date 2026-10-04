@@ -173,11 +173,14 @@ export function Button({
       style={({ pressed }) => [
         styles.button,
         small && styles.buttonSmall,
+        icon && (small ? styles.buttonSmallWithIcon : styles.buttonWithIcon),
         { backgroundColor: bg, opacity: disabled ? 0.4 : pressed ? 0.75 : 1 },
         style,
       ]}>
       {icon ? <Feather name={icon} size={small ? 15 : 18} color={fg} /> : null}
-      <Text style={{ fontFamily: Fonts.bold, fontSize: small ? 13 : 15, color: fg }}>{label}</Text>
+      <Text style={[styles.centered, { fontFamily: Fonts.bold, fontSize: small ? 13 : 15, lineHeight: small ? 17 : 20, color: fg }]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -224,7 +227,7 @@ export function Fab({ onPress, label = 'Agregar' }: { onPress: () => void; label
       }}
       style={({ pressed }) => [styles.fab, { backgroundColor: c.accent, opacity: pressed ? 0.85 : 1 }]}>
       <Feather name="plus" size={22} color={c.onAccent} />
-      <Text style={{ fontFamily: Fonts.bold, fontSize: 15, color: c.onAccent }}>{label}</Text>
+      <Text style={[styles.centered, { fontFamily: Fonts.bold, fontSize: 15, lineHeight: 20, color: c.onAccent }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -268,7 +271,9 @@ export function Chip({
           : { backgroundColor: color ? tint(base, 0.12) : c.surface, borderColor: color ? 'transparent' : c.border },
       ]}>
       {icon ? <Icon name={icon} size={16} accent={base} /> : null}
-      <Text style={{ fontFamily: selected ? Fonts.bold : Fonts.medium, fontSize: 13, color: c.text }}>{label}</Text>
+      <Text style={[styles.centered, { fontFamily: selected ? Fonts.bold : Fonts.medium, fontSize: 13, color: c.text }]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -313,7 +318,10 @@ export function Segmented<T extends string>({
             }}
             style={[styles.segment, active && { backgroundColor: c.surface }]}>
             <Text
-              style={{ fontFamily: active ? Fonts.bold : Fonts.medium, fontSize: 13, color: active ? c.text : c.textMuted }}>
+              style={[
+                styles.centered,
+                { fontFamily: active ? Fonts.bold : Fonts.medium, fontSize: 13, color: active ? c.text : c.textMuted },
+              ]}>
               {o.label}
             </Text>
           </Pressable>
@@ -521,6 +529,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   buttonSmall: { paddingHorizontal: Space.lg, paddingVertical: 9 },
+  // El ícono trae aire propio a los costados: con un poco menos de margen a la izquierda,
+  // ícono y texto quedan centrados a la vista.
+  buttonWithIcon: { paddingLeft: Space.xl - 3 },
+  buttonSmallWithIcon: { paddingLeft: Space.lg - 2 },
+  // Android suma un margen arriba de las letras: sin él, el texto queda centrado de verdad.
+  centered: { includeFontPadding: false, textAlignVertical: 'center' },
   iconButton: {
     width: 40,
     height: 40,
@@ -535,7 +549,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Space.sm,
-    paddingHorizontal: 22,
+    paddingLeft: 19,
+    paddingRight: 22,
     paddingVertical: 16,
     borderRadius: Radius.pill,
   },
