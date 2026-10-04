@@ -16,11 +16,13 @@ import { Intro } from '@/components/intro';
 import { LockGate } from '@/components/lock-gate';
 import { Toast } from '@/components/toast';
 import { Button, T } from '@/components/ui';
+import { resolveLang, strings } from '@/i18n/core';
 import { dateKey, yearsAt } from '@/lib/dates';
 import { fillTemplate } from '@/lib/events';
 import { greet } from '@/lib/media';
 import { canScheduleExactAlarms, GREET_ACTION, rescheduleAll, setupNotifications } from '@/lib/notifications';
 import * as Notifications from '@/lib/notifications-api';
+import { chimeIfBirthday } from '@/lib/sound';
 import type { Settings } from '@/lib/types';
 import { useStore } from '@/store/store';
 import { Space, useTheme } from '@/theme/theme';
@@ -36,7 +38,9 @@ function notificationSettingsChanged(a: Settings, b: Settings): boolean {
     a.notificationsEnabled !== b.notificationsEnabled ||
     a.notifyHour !== b.notifyHour ||
     a.weeklySummary !== b.weeklySummary ||
-    a.defaultOffsets !== b.defaultOffsets
+    a.defaultOffsets !== b.defaultOffsets ||
+    // Los textos de los avisos y del widget dependen del idioma.
+    a.language !== b.language
   );
 }
 
@@ -93,6 +97,20 @@ function openEventFromNotification(data: Record<string, unknown> | undefined, ac
   }
 }
 
+/** Sonidito de cumpleaños: al abrir la app (cuando termina la animación) y al volver a ella. */
+function useBirthdayChime(ready: boolean) {
+  useEffect(() => {
+    if (!ready) return;
+    const ring = () => {
+      const { events, settings } = useStore.getState();
+      chimeIfBirthday(events, settings.birthdaySound);
+    };
+    ring();
+    const sub = AppState.addEventListener('change', (st) => st === 'active' && ring());
+    return () => sub.remove();
+  }, [ready]);
+}
+
 /** Al tocar un aviso, abre la fecha correspondiente (también si la app estaba cerrada). */
 function useNotificationTaps(ready: boolean) {
   useEffect(() => {
@@ -124,12 +142,12 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     <View style={[styles.error, { backgroundColor: c.bg }]}>
       <IconBadge name="question" size={84} />
       <T variant="title" style={{ textAlign: 'center' }}>
-        Algo no salió bien
+        {strings().error.title}
       </T>
       <T muted style={{ textAlign: 'center' }}>
-        Tus datos están a salvo. Probá de nuevo y, si se repite, cerrá y volvé a abrir la app.
+        {strings().error.text}
       </T>
-      <Button label="Probar de nuevo" icon="refresh-cw" onPress={retry} style={{ marginTop: Space.md }} />
+      <Button label={strings().error.retry} icon="refresh-cw" onPress={retry} style={{ marginTop: Space.md }} />
     </View>
   );
 }
@@ -142,6 +160,7 @@ export default function RootLayout() {
     PlusJakartaSans_800ExtraBold,
   });
   const hydrated = useStore((s) => s.hydrated);
+  const lang = useStore((s) => resolveLang(s.settings.language));
   const { c, dark } = useTheme();
   const ready = fontsLoaded && hydrated;
   const [introDone, setIntroDone] = useState(false);
@@ -149,6 +168,7 @@ export default function RootLayout() {
 
   useNotificationSync();
   useNotificationTaps(ready);
+  useBirthdayChime(ready && introDone);
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();
@@ -166,7 +186,8 @@ export default function RootLayout() {
     <ThemeProvider value={navTheme}>
       <StatusBar style={dark ? 'light' : 'dark'} />
       <LockGate>
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg }, animation: 'slide_from_right' }}>
+        {/* Al cambiar de idioma se vuelve a montar todo, así ninguna pantalla queda con textos viejos. */}
+        <Stack key={lang} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg }, animation: 'slide_from_right' }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="event/new" options={{ animation: 'slide_from_bottom' }} />
           <Stack.Screen name="welcome" options={{ animation: 'fade', gestureEnabled: false }} />

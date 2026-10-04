@@ -1,10 +1,10 @@
-import { OFFSET_OPTIONS } from '@/lib/kinds';
+import { offsetOptions } from '@/lib/kinds';
 import { Chip, ChipRow } from './ui';
 
 export function OffsetPicker({ value, onChange }: { value: number[]; onChange: (v: number[]) => void }) {
   return (
     <ChipRow>
-      {OFFSET_OPTIONS.map((o) => {
+      {offsetOptions().map((o) => {
         const on = value.includes(o.days);
         return (
           <Chip

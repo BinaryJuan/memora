@@ -1,8 +1,13 @@
-import { describe, expect, it } from '@jest/globals';
+import { beforeAll, describe, expect, it } from '@jest/globals';
+
+import { setLanguage } from '@/i18n/core';
 
 import { fillTemplate, initials } from '../events';
 import type { MemoraEvent, Settings } from '../types';
 import { BackupError, isValidPhone, LIMITS, parseBudget, sanitizeBackup } from '../validation';
+
+// Los textos esperados en estas pruebas están en español.
+beforeAll(() => setLanguage('es'));
 
 const settings: Settings = {
   theme: 'system',
@@ -12,6 +17,8 @@ const settings: Settings = {
   weeklySummary: true,
   lockEnabled: true,
   onboarded: true,
+  language: 'es',
+  birthdaySound: true,
 };
 const PHOTOS = 'file:///data/user/0/com.memora/files/fotos/';
 
@@ -32,6 +39,31 @@ describe('sanitizeBackup', () => {
     expect(() => sanitizeBackup([], settings, PHOTOS)).toThrow(BackupError);
     expect(() => sanitizeBackup({ app: 'otra', events: [] }, settings, PHOTOS)).toThrow(BackupError);
     expect(() => sanitizeBackup(backup({ version: 9 }), settings, PHOTOS)).toThrow(/versión más nueva/);
+  });
+
+  it('notas: limpia las rotas, descarta las vacías y acepta respaldos sin notas', () => {
+    expect(sanitizeBackup(backup(), settings, PHOTOS).notes).toEqual([]);
+    const out = sanitizeBackup(
+      backup({
+        notes: [
+          { id: 'n1', title: 'Compras', text: 'Pan', color: '#94A684', pinned: true, createdAt: 1, updatedAt: 2 },
+          { id: 'n2', title: '', text: '   ' },
+          { id: 'n3', text: 'Sin título', color: 'rojo', pinned: 'sí' },
+          'cualquier cosa',
+        ],
+      }),
+      settings,
+      PHOTOS,
+    );
+    expect(out.notes).toHaveLength(2);
+    expect(out.notes?.[0]).toMatchObject({ id: 'n1', title: 'Compras', pinned: true, color: '#94A684', updatedAt: 2 });
+    expect(out.notes?.[1]).toMatchObject({ id: 'n3', title: '', text: 'Sin título', pinned: false, color: undefined });
+  });
+
+  it('el idioma no se toma del respaldo, pero el sonido sí', () => {
+    const out = sanitizeBackup(backup({ settings: { ...settings, language: 'en', birthdaySound: false } }), settings, PHOTOS);
+    expect(out.settings.language).toBe('es');
+    expect(out.settings.birthdaySound).toBe(false);
   });
 
   it('deja pasar un respaldo correcto y completa los campos que faltan', () => {

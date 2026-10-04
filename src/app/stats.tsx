@@ -1,9 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Card, EmptyState, Header, Screen, Section, T } from '@/components/ui';
-import { capitalize, MONTHS } from '@/lib/dates';
+import { strings } from '@/i18n/core';
+import { capitalize, monthNames } from '@/lib/dates';
 import { upcomingList } from '@/lib/events';
-import { KINDS } from '@/lib/kinds';
+import { kinds } from '@/lib/kinds';
 import { useStore } from '@/store/store';
 import { Fonts, Radius, Space, useTheme } from '@/theme/theme';
 
@@ -40,21 +41,23 @@ export default function StatsScreen() {
   const { c } = useTheme();
   const events = useStore((s) => s.events);
   const tags = useStore((s) => s.tags);
+  const s = strings().stats;
+  const months = monthNames();
 
   if (events.length === 0) {
     return (
       <Screen>
-        <Header title="Estadísticas" />
-        <EmptyState icon="chart" title="Todavía no hay datos" text="Agregá algunas fechas y volvé." />
+        <Header title={s.title} />
+        <EmptyState icon="chart" title={s.emptyTitle} text={s.emptyText} />
       </Screen>
     );
   }
 
   const yearly = events.filter((e) => e.recurrence !== 'monthly');
-  const byMonth = MONTHS.map((_, i) => yearly.filter((e) => e.month === i + 1).length);
+  const byMonth = months.map((_, i) => yearly.filter((e) => e.month === i + 1).length);
   const maxMonth = Math.max(...byMonth);
   const topMonth = byMonth.indexOf(maxMonth);
-  const byKind = KINDS.map((k) => ({ k, n: events.filter((e) => e.kind === k.id).length })).filter((x) => x.n > 0);
+  const byKind = kinds().map((k) => ({ k, n: events.filter((e) => e.kind === k.id).length })).filter((x) => x.n > 0);
   const byTag = tags.map((t) => ({ t, n: events.filter((e) => e.tagIds.includes(t.id)).length }));
   const nextRound = upcomingList(events).find((u) => u.years !== null && u.years % 10 === 0);
   const gifts = events.reduce((n, e) => n + e.giftsGiven.length, 0);
@@ -62,27 +65,29 @@ export default function StatsScreen() {
 
   return (
     <Screen>
-      <Header title="Estadísticas" />
+      <Header title={s.title} />
       <View style={{ flexDirection: 'row', gap: Space.sm }}>
-        <Stat value={events.length} label="fechas" />
-        <Stat value={gifts} label="regalos hechos" />
-        <Stat value={memories} label="recuerdos" />
+        <Stat value={events.length} label={s.dates} />
+        <Stat value={gifts} label={s.gifts} />
+        <Stat value={memories} label={s.memories} />
       </View>
 
       {maxMonth > 0 ? (
-        <Section title="Por mes">
+        <Section title={s.byMonth}>
           <Card style={{ gap: Space.sm }}>
             <T>
-              El mes con más fechas es <T style={{ fontFamily: Fonts.bold }}>{MONTHS[topMonth]}</T> ({maxMonth}).
+              {s.topMonthBefore}
+              <T style={{ fontFamily: Fonts.bold }}>{months[topMonth]}</T>
+              {s.topMonthAfter(maxMonth)}
             </T>
             {byMonth.map((n, i) => (
-              <Bar key={i} label={capitalize(MONTHS[i])} value={n} max={maxMonth} color={i === topMonth ? c.accent : c.textMuted} />
+              <Bar key={i} label={capitalize(months[i])} value={n} max={maxMonth} color={i === topMonth ? c.accent : c.textMuted} />
             ))}
           </Card>
         </Section>
       ) : null}
 
-      <Section title="Por tipo">
+      <Section title={s.byKind}>
         <Card style={{ gap: Space.sm }}>
           {byKind.map(({ k, n }) => (
             <Bar key={k.id} label={k.label} value={n} max={events.length} color={c.accent} />
@@ -91,7 +96,7 @@ export default function StatsScreen() {
       </Section>
 
       {byTag.length > 0 ? (
-        <Section title="Por etiqueta">
+        <Section title={s.byTag}>
           <Card style={{ gap: Space.sm }}>
             {byTag.map(({ t, n }) => (
               <Bar key={t.id} label={t.name} value={n} max={events.length} color={t.color} />
@@ -101,11 +106,11 @@ export default function StatsScreen() {
       ) : null}
 
       {nextRound ? (
-        <Section title="Próximo número redondo">
+        <Section title={s.nextRound}>
           <Card>
             <T>
-              <T style={{ fontFamily: Fonts.bold }}>{nextRound.event.title}</T>: {nextRound.years} años, en {nextRound.days}{' '}
-              {nextRound.days === 1 ? 'día' : 'días'}.
+              <T style={{ fontFamily: Fonts.bold }}>{nextRound.event.title}</T>
+              {s.nextRoundText(nextRound.years ?? 0, nextRound.days)}
             </T>
           </Card>
         </Section>

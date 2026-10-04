@@ -5,42 +5,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { IconBadge, type IconKey } from '@/components/icon';
 import { Button, T } from '@/components/ui';
+import { strings } from '@/i18n/core';
 import { askExactAlarmsOnce, ensurePermission } from '@/lib/notifications';
 import { useStore } from '@/store/store';
 import { Radius, Space, useTheme } from '@/theme/theme';
 
-interface Step {
-  icon: IconKey;
-  title: string;
-  text: string;
-}
-
-const STEPS: Step[] = [
-  {
-    icon: 'cake',
-    title: 'Todas tus fechas, en un solo lugar',
-    text: 'Cumpleaños, aniversarios o cualquier cosa que no te quieras olvidar. Anotás el nombre y el día, y listo.',
-  },
-  {
-    icon: 'bell',
-    title: 'Te avisamos a tiempo',
-    text: 'El mismo día o unos días antes, a la hora que elijas. Para eso necesitamos permiso para mandarte notificaciones.',
-  },
-  {
-    icon: 'leaf',
-    title: 'Todo queda en tu teléfono',
-    text: 'Sin cuentas ni publicidad. Si querés, desde Ajustes podés guardar un respaldo donde prefieras.',
-  },
-];
+const STEP_ICONS: IconKey[] = ['cake', 'bell', 'leaf'];
 
 export default function WelcomeScreen() {
   const { c } = useTheme();
   const updateSettings = useStore((s) => s.updateSettings);
   const [index, setIndex] = useState(0);
   const [fade] = useState(() => new Animated.Value(1));
-  const step = STEPS[index];
+  const w = strings().welcome;
+  const step = { icon: STEP_ICONS[index], ...w.steps[index] };
   const isNotifications = index === 1;
-  const isLast = index === STEPS.length - 1;
+  const isLast = index === STEP_ICONS.length - 1;
 
   const goTo = (next: number) => {
     Animated.timing(fade, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => {
@@ -62,7 +42,7 @@ export default function WelcomeScreen() {
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]}>
       <View style={styles.skipRow}>
-        {!isLast ? <Button label="Saltar" variant="ghost" small onPress={finish} /> : null}
+        {!isLast ? <Button label={w.skip} variant="ghost" small onPress={finish} /> : null}
       </View>
 
       <Animated.View style={[styles.body, { opacity: fade }]}>
@@ -76,23 +56,23 @@ export default function WelcomeScreen() {
       </Animated.View>
 
       <View style={styles.footer}>
-        <View style={styles.dots} accessibilityLabel={`Paso ${index + 1} de ${STEPS.length}`}>
-          {STEPS.map((s, i) => (
+        <View style={styles.dots} accessibilityLabel={w.step(index + 1, STEP_ICONS.length)}>
+          {STEP_ICONS.map((icon, i) => (
             <View
-              key={s.icon}
+              key={icon}
               style={[styles.dot, { backgroundColor: i === index ? c.accent : c.border, width: i === index ? 22 : 8 }]}
             />
           ))}
         </View>
         {isNotifications ? (
           <>
-            <Button label="Activar avisos" icon="bell" onPress={enableNotifications} />
-            <Button label="Ahora no" variant="ghost" onPress={() => goTo(index + 1)} />
+            <Button label={w.enable} icon="bell" onPress={enableNotifications} />
+            <Button label={w.notNow} variant="ghost" onPress={() => goTo(index + 1)} />
           </>
         ) : isLast ? (
-          <Button label="Empezar" onPress={finish} />
+          <Button label={w.start} onPress={finish} />
         ) : (
-          <Button label="Siguiente" onPress={() => goTo(index + 1)} />
+          <Button label={w.next} onPress={() => goTo(index + 1)} />
         )}
       </View>
     </SafeAreaView>

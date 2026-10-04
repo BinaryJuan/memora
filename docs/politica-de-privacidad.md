@@ -15,7 +15,8 @@ En tu teléfono, y solo ahí, Memora guarda lo que vos cargás:
 - Nombres, fechas y el tipo de cada fecha.
 - Teléfonos, gustos, notas e ideas de regalo, si los agregás.
 - Fotos y textos de los recuerdos, si los agregás.
-- Tus preferencias (tema, horario de los avisos, etiquetas, mensajes de saludo).
+- Las notas que escribís en la sección Notas.
+- Tus preferencias (tema, idioma, horario de los avisos, etiquetas, mensajes de saludo).
 
 Si desinstalás la app, esta información se borra.
 

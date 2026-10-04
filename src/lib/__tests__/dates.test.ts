@@ -1,4 +1,6 @@
-import { describe, expect, it } from '@jest/globals';
+import { beforeAll, describe, expect, it } from '@jest/globals';
+
+import { setLanguage } from '@/i18n/core';
 
 import {
   daysBetween,
@@ -11,6 +13,9 @@ import {
   zodiacSign,
 } from '../dates';
 import type { MemoraEvent } from '../types';
+
+// Los textos esperados en estas pruebas están en español.
+beforeAll(() => setLanguage('es'));
 
 function ev(partial: Partial<MemoraEvent>): MemoraEvent {
   return {

@@ -4,6 +4,8 @@ import * as IntentLauncher from 'expo-intent-launcher';
 import * as Notifications from '@/lib/notifications-api';
 import { Alert, Linking, Platform } from 'react-native';
 
+import { strings } from '@/i18n/core';
+
 import { canScheduleExactAlarms } from '../../modules/memora-alarms';
 import { planAll, splitPlan, type Planned } from './notification-plan';
 import type { MemoraEvent, Settings, Tag } from './types';
@@ -22,6 +24,20 @@ const HANDLED_KEY = 'memora-avisos';
 const ASKED_EXACT_KEY = 'memora-alarmas-preguntado';
 const supported = Platform.OS !== 'web';
 
+/** Nombre del canal y del botón "Saludar": se vuelven a poner al cambiar de idioma. */
+function setupChannel() {
+  const n = strings().notif;
+  Notifications.setNotificationChannelAsync(CHANNEL_ID, {
+    name: n.channel,
+    importance: Notifications.AndroidImportance.HIGH,
+    vibrationPattern: [0, 200, 120, 200],
+    lightColor: '#B56E4D',
+  }).catch(() => {});
+  Notifications.setNotificationCategoryAsync(GREET_CATEGORY, [
+    { identifier: GREET_ACTION, buttonTitle: n.greetAction, options: { opensAppToForeground: true } },
+  ]).catch(() => {});
+}
+
 export function setupNotifications() {
   if (!supported) return;
   Notifications.setNotificationHandler({
@@ -32,15 +48,7 @@ export function setupNotifications() {
       shouldShowList: true,
     }),
   });
-  Notifications.setNotificationChannelAsync(CHANNEL_ID, {
-    name: 'Recordatorios',
-    importance: Notifications.AndroidImportance.HIGH,
-    vibrationPattern: [0, 200, 120, 200],
-    lightColor: '#B56E4D',
-  }).catch(() => {});
-  Notifications.setNotificationCategoryAsync(GREET_CATEGORY, [
-    { identifier: GREET_ACTION, buttonTitle: 'Saludar por WhatsApp', options: { opensAppToForeground: true } },
-  ]).catch(() => {});
+  setupChannel();
 }
 
 export async function ensurePermission(): Promise<boolean> {
@@ -80,6 +88,7 @@ export function rescheduleAll(events: MemoraEvent[], tags: Tag[], settings: Sett
   queue = queue.then(async () => {
     try {
       await Notifications.cancelAllScheduledNotificationsAsync();
+      setupChannel();
       if (!settings.notificationsEnabled) return;
       const perm = await Notifications.getPermissionsAsync();
       if (!perm.granted) return;
@@ -125,11 +134,11 @@ export async function askExactAlarmsOnce(): Promise<void> {
   }
   await new Promise<void>((resolve) => {
     Alert.alert(
-      'Avisos a horario',
-      'Android puede atrasar los avisos para ahorrar batería. Para que lleguen a la hora justa, permití «Alarmas y recordatorios» para Memora.',
+      strings().notif.exactTitle,
+      strings().notif.exactText,
       [
-        { text: 'Ahora no', style: 'cancel', onPress: () => resolve() },
-        { text: 'Permitir', onPress: () => void openExactAlarmSettings().finally(resolve) },
+        { text: strings().notif.notNow, style: 'cancel', onPress: () => resolve() },
+        { text: strings().notif.allow, onPress: () => void openExactAlarmSettings().finally(resolve) },
       ],
       { cancelable: true, onDismiss: () => resolve() },
     );
@@ -152,7 +161,7 @@ export async function openExactAlarmSettings() {
 export async function sendTestNotification() {
   if (!supported) return;
   await Notifications.scheduleNotificationAsync({
-    content: { title: 'Memora 🎂', body: '¡Así te van a llegar los avisos!' },
+    content: { title: strings().notif.testTitle, body: strings().notif.testBody },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 3, channelId: CHANNEL_ID },
   });
 }

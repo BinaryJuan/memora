@@ -6,7 +6,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Confetti } from '@/components/confetti';
 import { Icon } from '@/components/icon';
 import { Avatar, EventRow } from '@/components/event-row';
-import { Card, Chip, ChipRow, EmptyState, Fab, PageTitle, Screen, Section, T, Button, tap } from '@/components/ui';
+import { Button, Card, Chip, ChipRow, EmptyState, Fab, IconButton, PageTitle, Screen, Section, T, tap } from '@/components/ui';
+import { strings } from '@/i18n/core';
 import { dateKey, formatLongDate } from '@/lib/dates';
 import { upcomingList, type Upcoming } from '@/lib/events';
 import { getKind } from '@/lib/kinds';
@@ -14,11 +15,12 @@ import { useStore } from '@/store/store';
 import { Fonts, Radius, Space, useTheme } from '@/theme/theme';
 
 function greeting(d: Date): string {
+  const g = strings().home.greeting;
   const h = d.getHours();
-  if (h < 6) return 'Buenas noches';
-  if (h < 13) return 'Buen día';
-  if (h < 20) return 'Buenas tardes';
-  return 'Buenas noches';
+  if (h < 6) return g.night;
+  if (h < 13) return g.morning;
+  if (h < 20) return g.afternoon;
+  return g.night;
 }
 
 function TodayCard({ items }: { items: Upcoming[] }) {
@@ -29,7 +31,7 @@ function TodayCard({ items }: { items: Upcoming[] }) {
     <Card style={{ backgroundColor: c.accentSoft, borderColor: 'transparent', gap: Space.md }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: Space.sm }}>
         <Icon name="party" size={26} />
-        <T variant="title">Hoy es un día especial</T>
+        <T variant="title">{strings().home.todayTitle}</T>
       </View>
       {items.map(({ event, years }) => {
         const kind = getKind(event.kind);
@@ -62,7 +64,7 @@ function TodayCard({ items }: { items: Upcoming[] }) {
                 ]}>
                 <Feather name={greeted ? 'check' : 'message-circle'} size={14} color={greeted ? '#fff' : c.text} />
                 <T variant="small" style={{ fontFamily: Fonts.bold }} color={greeted ? '#fff' : c.text}>
-                  {greeted ? 'Saludado' : 'Saludar'}
+                  {greeted ? strings().home.greeted : strings().home.greet}
                 </T>
               </Pressable>
             ) : null}
@@ -78,6 +80,7 @@ export default function HomeScreen() {
   const tags = useStore((s) => s.tags);
   const [filter, setFilter] = useState<string | null>(null);
   const now = new Date();
+  const s = strings().home;
 
   const list = useMemo(() => {
     const filtered = filter ? events.filter((e) => e.tagIds.includes(filter)) : events;
@@ -92,12 +95,9 @@ export default function HomeScreen() {
   if (events.length === 0) {
     return (
       <Screen>
-        <PageTitle kicker={greeting(now)} title="Memora" />
-        <EmptyState
-          icon="balloon"
-          title="Todavía no anotaste nada"
-          text="Cumpleaños, aniversarios o cualquier fecha que no te quieras olvidar. Empezá por la primera.">
-          <Button label="Agregar una fecha" icon="plus" onPress={() => router.push('/event/new')} />
+        <PageTitle kicker={greeting(now)} title="memora" />
+        <EmptyState icon="balloon" title={s.emptyTitle} text={s.emptyText}>
+          <Button label={s.addFirst} icon="plus" onPress={() => router.push('/event/new')} />
         </EmptyState>
       </Screen>
     );
@@ -106,11 +106,15 @@ export default function HomeScreen() {
   return (
     <View style={{ flex: 1 }}>
       <Screen>
-        <PageTitle kicker={formatLongDate(now)} title={greeting(now)} />
+        <PageTitle
+          kicker={formatLongDate(now)}
+          title={greeting(now)}
+          right={<IconButton icon="list" filled label={s.allDates} onPress={() => router.push('/all')} />}
+        />
 
         {tags.length > 0 ? (
           <ChipRow scroll>
-            <Chip label="Todas" selected={filter === null} onPress={() => setFilter(null)} />
+            <Chip label={s.allChip} selected={filter === null} onPress={() => setFilter(null)} />
             {tags.map((t) => (
               <Chip
                 key={t.id}
@@ -131,30 +135,38 @@ export default function HomeScreen() {
         ) : null}
 
         {list.length === 0 ? (
-          <EmptyState icon="search" title="Nada por acá" text="No hay fechas próximas con esta etiqueta." />
+          <EmptyState icon="search" title={s.noneForTag} text={s.noneForTagText} />
         ) : null}
 
         {week.length > 0 ? (
-          <Section title="Esta semana">
+          <Section title={s.thisWeek}>
             {week.map((u) => (
               <EventRow key={u.event.id} item={u} />
             ))}
           </Section>
         ) : null}
         {month.length > 0 ? (
-          <Section title="Este mes">
+          <Section title={s.thisMonth}>
             {month.map((u) => (
               <EventRow key={u.event.id} item={u} />
             ))}
           </Section>
         ) : null}
         {later.length > 0 ? (
-          <Section title="Más adelante">
+          <Section title={s.later}>
             {later.map((u) => (
               <EventRow key={u.event.id} item={u} />
             ))}
           </Section>
         ) : null}
+
+        <Button
+          label={s.seeAll(events.length)}
+          icon="list"
+          variant="ghost"
+          onPress={() => router.push('/all')}
+          style={{ marginTop: Space.xl }}
+        />
       </Screen>
       <Fab onPress={() => router.push('/event/new')} />
       {today.length > 0 ? <Confetti /> : null}

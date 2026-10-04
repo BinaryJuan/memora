@@ -1,9 +1,10 @@
 import type { IconKey } from '@/components/icon-data';
+import { strings } from '@/i18n/core';
+
 import type { KindId, Recurrence } from './types';
 
-export interface KindInfo {
+interface KindBase {
   id: KindId;
-  label: string;
   /** Ícono dentro de la app. */
   icon: IconKey;
   /** Solo para el texto de las notificaciones (no pueden mostrar SVG). */
@@ -11,6 +12,13 @@ export interface KindInfo {
   /** Es sobre una persona o pareja: muestra saludos, regalos y gustos. */
   person: boolean;
   defaultRecurrence: Recurrence;
+  /** Si tiene sentido mostrar cuántos años se cumplen. */
+  showsYears: boolean;
+}
+
+/** Un tipo de fecha con sus textos en el idioma actual (ver "kinds" en src/i18n). */
+export interface KindInfo extends KindBase {
+  label: string;
   titleLabel: string;
   titlePlaceholder: string;
   /** "el cumpleaños de Ana", "Pagar el alquiler" */
@@ -19,92 +27,49 @@ export interface KindInfo {
   yearsLabel?: (n: number) => string;
 }
 
-export const KINDS: KindInfo[] = [
-  {
-    id: 'birthday',
-    label: 'Cumpleaños',
-    icon: 'cake',
-    emoji: '🎂',
-    person: true,
-    defaultRecurrence: 'yearly',
-    titleLabel: '¿De quién es el cumple?',
-    titlePlaceholder: 'Ej: Ana Pérez',
-    phrase: (t) => `el cumpleaños de ${t}`,
-    yearsLabel: (n) => `Cumple ${n}`,
-  },
-  {
-    id: 'anniversary',
-    label: 'Aniversario',
-    icon: 'rings',
-    emoji: '💍',
-    person: true,
-    defaultRecurrence: 'yearly',
-    titleLabel: '¿Qué aniversario?',
-    titlePlaceholder: 'Ej: Ana y Juan',
-    phrase: (t) => `el aniversario de ${t}`,
-    yearsLabel: (n) => `${n} ${n === 1 ? 'año' : 'años'}`,
-  },
-  {
-    id: 'special',
-    label: 'Fecha especial',
-    icon: 'sparkle',
-    emoji: '⭐',
-    person: false,
-    defaultRecurrence: 'yearly',
-    titleLabel: '¿Qué fecha es?',
-    titlePlaceholder: 'Ej: Día que nos mudamos',
-    phrase: (t) => t,
-    yearsLabel: (n) => `Se cumplen ${n} ${n === 1 ? 'año' : 'años'}`,
-  },
-  {
-    id: 'memorial',
-    label: 'En memoria',
-    icon: 'leaf',
-    emoji: '🕊️',
-    person: false,
-    defaultRecurrence: 'yearly',
-    titleLabel: '¿A quién recordamos?',
-    titlePlaceholder: 'Ej: Abuelo Carlos',
-    phrase: (t) => `el recuerdo de ${t}`,
-    yearsLabel: (n) => `Se cumplen ${n} ${n === 1 ? 'año' : 'años'}`,
-  },
-  {
-    id: 'reminder',
-    label: 'Recordatorio',
-    icon: 'bell',
-    emoji: '🔔',
-    person: false,
-    defaultRecurrence: 'once',
-    titleLabel: '¿De qué hay que acordarse?',
-    titlePlaceholder: 'Ej: Renovar el pasaporte',
-    phrase: (t) => t,
-  },
+const BASE: KindBase[] = [
+  { id: 'birthday', icon: 'cake', emoji: '🎂', person: true, defaultRecurrence: 'yearly', showsYears: true },
+  { id: 'anniversary', icon: 'rings', emoji: '💍', person: true, defaultRecurrence: 'yearly', showsYears: true },
+  { id: 'special', icon: 'sparkle', emoji: '⭐', person: false, defaultRecurrence: 'yearly', showsYears: true },
+  { id: 'memorial', icon: 'leaf', emoji: '🕊️', person: false, defaultRecurrence: 'yearly', showsYears: true },
+  { id: 'reminder', icon: 'bell', emoji: '🔔', person: false, defaultRecurrence: 'once', showsYears: false },
 ];
 
-export function getKind(id: KindId): KindInfo {
-  return KINDS.find((k) => k.id === id) ?? KINDS[0];
+export const KIND_IDS: KindId[] = BASE.map((k) => k.id);
+
+function withTexts(base: KindBase): KindInfo {
+  const t = strings().kinds[base.id];
+  return { ...base, ...t, yearsLabel: base.showsYears ? t.yearsLabel : undefined };
 }
 
-export const RECURRENCES: { id: Recurrence; label: string }[] = [
-  { id: 'yearly', label: 'Cada año' },
-  { id: 'monthly', label: 'Cada mes' },
-  { id: 'once', label: 'Una vez' },
-];
+/** Todos los tipos de fecha, con sus textos en el idioma actual. */
+export function kinds(): KindInfo[] {
+  return BASE.map(withTexts);
+}
 
-export const OFFSET_OPTIONS: { days: number; label: string }[] = [
-  { days: 0, label: 'El mismo día' },
-  { days: 1, label: '1 día antes' },
-  { days: 3, label: '3 días antes' },
-  { days: 7, label: '1 semana antes' },
-  { days: 14, label: '2 semanas antes' },
-  { days: 30, label: '1 mes antes' },
-];
+export function getKind(id: KindId): KindInfo {
+  return withTexts(BASE.find((k) => k.id === id) ?? BASE[0]);
+}
+
+export const RECURRENCE_IDS: Recurrence[] = ['yearly', 'monthly', 'once'];
+
+export function recurrences(): { id: Recurrence; label: string }[] {
+  return RECURRENCE_IDS.map((id) => ({ id, label: strings().recurrences[id] }));
+}
+
+export const OFFSET_DAYS = [0, 1, 3, 7, 14, 30];
+
+export function offsetOptions(): { days: number; label: string }[] {
+  const o = strings().offsets;
+  return OFFSET_DAYS.map((days) => ({ days, label: o[days] }));
+}
 
 export function offsetsSummary(offsets: number[]): string {
-  if (offsets.length === 0) return 'Sin avisos';
+  const o = strings().offsets;
+  if (offsets.length === 0) return o.none;
   return [...offsets]
     .sort((a, b) => a - b)
-    .map((d) => OFFSET_OPTIONS.find((o) => o.days === d)?.label ?? `${d} días antes`)
+    .map((d) => o[d] ?? o.other(d))
     .join(' · ');
 }
 
@@ -131,3 +96,6 @@ export const LEGACY_TAG_COLORS: Record<string, string> = {
   '#B5838D': '#CC9A8C',
   '#8D99AE': '#A39483',
 };
+
+/** Las notas usan la misma paleta mate que las etiquetas. */
+export const NOTE_COLORS = TAG_COLORS;

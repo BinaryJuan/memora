@@ -3,20 +3,14 @@ import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { EventRow } from '@/components/event-row';
-import { Chip, ChipRow, EmptyState, Fab, Field, PageTitle, Screen, Section, Segmented } from '@/components/ui';
+import { Chip, ChipRow, EmptyState, Fab, Field, Header, Screen, Section, Segmented, T } from '@/components/ui';
+import { strings } from '@/i18n/core';
 import { clampDate, daysBetween } from '@/lib/dates';
-import { upcomingOf, type Upcoming } from '@/lib/events';
-import { KINDS } from '@/lib/kinds';
+import { normalizeSearch, upcomingOf, type Upcoming } from '@/lib/events';
+import { kinds } from '@/lib/kinds';
 import type { KindId } from '@/lib/types';
 import { useStore } from '@/store/store';
 import { Space } from '@/theme/theme';
-
-function normalize(s: string): string {
-  return s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase();
-}
 
 export default function AllScreen() {
   const events = useStore((s) => s.events);
@@ -25,13 +19,14 @@ export default function AllScreen() {
   const [tag, setTag] = useState<string | null>(null);
   const [kind, setKind] = useState<KindId | null>(null);
   const [sort, setSort] = useState<'date' | 'name'>('date');
+  const s = strings().all;
 
   const { active, past } = useMemo(() => {
-    const q = normalize(query.trim());
+    const q = normalizeSearch(query.trim());
     const now = new Date();
     const filtered = events.filter(
       (e) =>
-        (!q || normalize(`${e.title} ${e.notes ?? ''}`).includes(q)) &&
+        (!q || normalizeSearch(`${e.title} ${e.notes ?? ''}`).includes(q)) &&
         (!tag || e.tagIds.includes(tag)) &&
         (!kind || e.kind === kind),
     );
@@ -48,20 +43,23 @@ export default function AllScreen() {
     }
     const cmp =
       sort === 'name'
-        ? (a: Upcoming, b: Upcoming) => a.event.title.localeCompare(b.event.title)
+        ? (a: Upcoming, b: Upcoming) => a.event.title.localeCompare(b.event.title, strings().locale)
         : (a: Upcoming, b: Upcoming) => a.days - b.days;
     return { active: active.sort(cmp), past: past.sort((a, b) => b.date.getTime() - a.date.getTime()) };
   }, [events, query, tag, kind, sort]);
 
-  const usedKinds = KINDS.filter((k) => events.some((e) => e.kind === k.id));
+  const usedKinds = kinds().filter((k) => events.some((e) => e.kind === k.id));
 
   return (
     <View style={{ flex: 1 }}>
       <Screen>
-        <PageTitle kicker={`${events.length} ${events.length === 1 ? 'fecha' : 'fechas'}`} title="Todas" />
+        <Header title={s.title} />
         <View style={{ gap: Space.md }}>
+          <T variant="small" muted>
+            {strings().common.dates(events.length)}
+          </T>
           <Field
-            placeholder="Buscar por nombre o nota…"
+            placeholder={s.search}
             value={query}
             onChangeText={setQuery}
             returnKeyType="search"
@@ -92,8 +90,8 @@ export default function AllScreen() {
           </ChipRow>
           <Segmented
             options={[
-              { id: 'date', label: 'Por fecha' },
-              { id: 'name', label: 'A – Z' },
+              { id: 'date', label: s.byDate },
+              { id: 'name', label: s.byName },
             ]}
             value={sort}
             onChange={setSort}
@@ -101,20 +99,20 @@ export default function AllScreen() {
         </View>
 
         {events.length === 0 ? (
-          <EmptyState icon="envelope" title="Sin fechas" text="Tocá «Agregar» para anotar la primera." />
+          <EmptyState icon="envelope" title={s.emptyTitle} text={s.emptyText} />
         ) : active.length + past.length === 0 ? (
-          <EmptyState icon="search" title="Sin resultados" text="Probá con otra búsqueda o quitá algún filtro." />
+          <EmptyState icon="search" title={s.noResults} text={s.noResultsText} />
         ) : null}
 
         {active.length > 0 ? (
-          <Section title="Próximas">
+          <Section title={s.upcoming}>
             {active.map((u) => (
               <EventRow key={u.event.id} item={u} />
             ))}
           </Section>
         ) : null}
         {past.length > 0 ? (
-          <Section title="Ya pasaron">
+          <Section title={s.past}>
             {past.map((u) => (
               <EventRow key={u.event.id} item={u} showCountdown={false} />
             ))}

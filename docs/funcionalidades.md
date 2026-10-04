@@ -35,11 +35,17 @@ Leyenda: ✅ hecho · 🚧 en curso · ⏳ más adelante · ❌ descartado
 - ✅ "Deshacer" al borrar fechas, recuerdos e ideas de regalo.
 - ✅ Widget "Próximas fechas" para la pantalla de inicio. Solo en la app compilada (en Expo Go no existe).
 
-## Próximo (pedido el 4/10/2026)
+## Versión 1.1 (4/10/2026)
+- ✅ "memora" en minúscula en el inicio y en el bloqueo, igual que en la animación y la tarjeta.
+- ✅ **Idiomas: español e inglés.** Por defecto sigue el idioma del teléfono (español si está en español, inglés para cualquier otro); se puede elegir en Ajustes. Todo está traducido: pantallas, avisos, widget, formatos de fecha (en inglés la semana empieza el domingo), signos y mensajes de saludo. Las etiquetas y mensajes de fábrica se traducen solos al cambiar de idioma, salvo que se hayan editado. Los textos están en `src/i18n/es.ts` y `src/i18n/en.ts` (una prueba verifica que tengan las mismas claves).
+- ✅ **Notas**, al estilo Keep: pestaña propia en lugar de "Todas". Título y texto, color, fijar arriba, búsqueda, grilla de dos columnas. Se guardan solas al escribir; una nota vacía no se guarda. Borrar tiene "Deshacer". Entran en el respaldo.
+- ✅ "Todas las fechas" se abre desde Inicio (botón arriba a la derecha y "Ver todas las fechas" al final).
+- ✅ **Sonido los días de cumple**: al abrir la app, si hay algún cumpleaños hoy, suena un "ding-ding" corto. Una vez por día, nunca con el teléfono en silencio o vibración, sin cortar la música. Se apaga en Ajustes. El sonido está en `assets/sounds/cumple.wav` (lo genera `scripts/generar-sonido.js`; se puede reemplazar por otro archivo con el mismo nombre).
+
+## Próximo
 - 🐞 **El widget se ve transparente** en el Samsung (Android 16). Registrar la tarea antes de `expo-router/entry` no alcanzó. Próximo paso: celular por USB, agregar el widget y leer `adb logcat` (filtrar por `RNWidget`, `ReactNativeJS`, `AndroidRuntime`) para ver si la tarea corre, si falla el dibujo o si el ancho llega en 0. `adb` quedó en `../herramientas/platform-tools`.
-- ⏳ "memora" en minúscula en el título del inicio (como en la animación de entrada y la tarjeta).
-- ⏳ Idiomas: español e inglés como mínimo, según el idioma del teléfono y con opción en Ajustes. Implica sacar todos los textos a archivos de traducción (pantallas, avisos, widget, plantillas de saludo, nombres de meses y días, formatos de fecha) y traducir la ficha de Play Store. Evaluar portugués (Brasil es un mercado grande) en una segunda etapa.
-- ⏳ Sección "Notas", al estilo Google Keep: notas sueltas (no atadas a una fecha), con título opcional, colores, fijar arriba, buscar y, quizás, listas con casillas. Va en la barra de abajo **en lugar de "Todas"**; la lista completa de fechas pasa a abrirse desde Inicio (un "Ver todas") o desde Calendario. Definir si entra en el respaldo (lo lógico es que sí).
+- ⏳ Portugués (Brasil es un mercado grande): alcanza con sumar `src/i18n/pt.ts` y agregarlo en `core.ts`.
+- ⏳ Notas con listas de casillas (como las de Keep).
 
 ## Más adelante
 - ⏳ Pedir reseña en Play Store después de un tiempo de uso.

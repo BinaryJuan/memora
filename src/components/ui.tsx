@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { strings } from '@/i18n/core';
 import { Fonts, Radius, Space, tint, useTheme } from '@/theme/theme';
 import { blobRadius, Icon, IconBadge, type IconKey } from './icon';
 
@@ -94,7 +95,7 @@ export function Screen({
 export function Header({ title, right }: { title?: string; right?: ReactNode }) {
   return (
     <View style={styles.header}>
-      <IconButton icon="arrow-left" label="Volver" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+      <IconButton icon="arrow-left" label={strings().common.back} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
       <T variant="heading" numberOfLines={1} style={{ flex: 1, textAlign: 'center' }}>
         {title ?? ''}
       </T>
@@ -215,7 +216,7 @@ export function IconButton({
   );
 }
 
-export function Fab({ onPress, label = 'Agregar' }: { onPress: () => void; label?: string }) {
+export function Fab({ onPress, label = strings().common.add }: { onPress: () => void; label?: string }) {
   const { c } = useTheme();
   return (
     <Pressable
@@ -481,7 +482,7 @@ export function Sheet({
             <T variant="title" style={{ flex: 1 }}>
               {title}
             </T>
-            <IconButton icon="x" onPress={onClose} filled label="Cerrar" />
+            <IconButton icon="x" onPress={onClose} filled label={strings().common.close} />
           </View>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: Space.md }}>
             {children}

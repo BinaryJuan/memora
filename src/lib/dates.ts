@@ -1,25 +1,28 @@
+import { strings } from '@/i18n/core';
+
 import type { MemoraEvent } from './types';
 
 const DAY_MS = 86_400_000;
 
-export const MONTHS = [
-  'enero',
-  'febrero',
-  'marzo',
-  'abril',
-  'mayo',
-  'junio',
-  'julio',
-  'agosto',
-  'septiembre',
-  'octubre',
-  'noviembre',
-  'diciembre',
-];
+/** Nombre del mes (1-12) en el idioma actual, en minúscula si el idioma lo escribe así. */
+export function monthName(month: number): string {
+  return strings().dates.months[month - 1];
+}
 
-export const WEEKDAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-/** Semana empezando el lunes. */
-export const WEEKDAY_INITIALS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+export function monthNames(): string[] {
+  return strings().dates.months;
+}
+
+/** Iniciales de los días, empezando por el primer día de la semana del idioma. */
+export function weekdayInitials(): string[] {
+  const { dates, weekStartsOn } = strings();
+  return [...dates.weekdayInitials.slice(weekStartsOn), ...dates.weekdayInitials.slice(0, weekStartsOn)];
+}
+
+/** Columna (0-6) en la que cae un día de la semana (0 = domingo) según el idioma. */
+export function weekdayColumn(day: number): number {
+  return (day - strings().weekStartsOn + 7) % 7;
+}
 
 export function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -114,54 +117,58 @@ export function isMilestone(n: number | null): boolean {
 }
 
 export function countdownLabel(days: number): string {
-  if (days === 0) return 'Hoy';
-  if (days === 1) return 'Mañana';
-  return `En ${days} días`;
+  const d = strings().dates;
+  if (days === 0) return d.today;
+  if (days === 1) return d.tomorrow;
+  return d.inDays(days);
 }
 
 export function shortCountdown(days: number): string {
-  if (days === 0) return 'Hoy';
-  if (days === 1) return 'Mañana';
-  return `${days} días`;
+  const d = strings().dates;
+  if (days === 0) return d.today;
+  if (days === 1) return d.tomorrow;
+  return d.daysShort(days);
 }
 
 export function formatDayMonth(day: number, month: number): string {
-  return `${day} de ${MONTHS[month - 1]}`;
+  return strings().dates.dayMonth(day, monthName(month));
 }
 
 export function formatEventDate(e: MemoraEvent): string {
-  if (e.recurrence === 'monthly') return `El ${e.day} de cada mes`;
-  const base = formatDayMonth(e.day, e.month);
-  return e.year ? `${base} de ${e.year}` : base;
+  const d = strings().dates;
+  if (e.recurrence === 'monthly') return d.everyMonth(e.day);
+  return e.year ? d.dayMonthYear(e.day, monthName(e.month), e.year) : formatDayMonth(e.day, e.month);
 }
 
-export function formatLongDate(d: Date): string {
-  return `${capitalize(WEEKDAYS[d.getDay()])} ${d.getDate()} de ${MONTHS[d.getMonth()]}`;
+export function formatLongDate(date: Date): string {
+  const d = strings().dates;
+  return capitalize(d.longDate(d.weekdays[date.getDay()], date.getDate(), d.months[date.getMonth()]));
 }
 
-export function formatShortDate(d: Date): string {
-  return `${WEEKDAYS[d.getDay()].slice(0, 3)} ${d.getDate()}`;
+export function formatShortDate(date: Date): string {
+  return strings().dates.shortDate(strings().dates.weekdaysShort[date.getDay()], date.getDate());
 }
 
-const ZODIAC: { name: string; emoji: string; from: [number, number] }[] = [
-  { name: 'Capricornio', emoji: '♑', from: [12, 22] },
-  { name: 'Sagitario', emoji: '♐', from: [11, 22] },
-  { name: 'Escorpio', emoji: '♏', from: [10, 23] },
-  { name: 'Libra', emoji: '♎', from: [9, 23] },
-  { name: 'Virgo', emoji: '♍', from: [8, 23] },
-  { name: 'Leo', emoji: '♌', from: [7, 23] },
-  { name: 'Cáncer', emoji: '♋', from: [6, 21] },
-  { name: 'Géminis', emoji: '♊', from: [5, 21] },
-  { name: 'Tauro', emoji: '♉', from: [4, 20] },
-  { name: 'Aries', emoji: '♈', from: [3, 21] },
-  { name: 'Piscis', emoji: '♓', from: [2, 19] },
-  { name: 'Acuario', emoji: '♒', from: [1, 20] },
+/** Desde qué día empieza cada signo, de atrás para adelante. `sign` es la posición en `dates.zodiac`. */
+const ZODIAC: { sign: number; emoji: string; from: [number, number] }[] = [
+  { sign: 0, emoji: '♑', from: [12, 22] },
+  { sign: 11, emoji: '♐', from: [11, 22] },
+  { sign: 10, emoji: '♏', from: [10, 23] },
+  { sign: 9, emoji: '♎', from: [9, 23] },
+  { sign: 8, emoji: '♍', from: [8, 23] },
+  { sign: 7, emoji: '♌', from: [7, 23] },
+  { sign: 6, emoji: '♋', from: [6, 21] },
+  { sign: 5, emoji: '♊', from: [5, 21] },
+  { sign: 4, emoji: '♉', from: [4, 20] },
+  { sign: 3, emoji: '♈', from: [3, 21] },
+  { sign: 2, emoji: '♓', from: [2, 19] },
+  { sign: 1, emoji: '♒', from: [1, 20] },
 ];
 
 export function zodiacSign(day: number, month: number): { name: string; emoji: string } {
   const value = month * 100 + day;
-  const sign = ZODIAC.find((z) => value >= z.from[0] * 100 + z.from[1]);
-  return sign ?? ZODIAC[0];
+  const z = ZODIAC.find((x) => value >= x.from[0] * 100 + x.from[1]) ?? ZODIAC[0];
+  return { name: strings().dates.zodiac[z.sign], emoji: z.emoji };
 }
 
 export function isValidDate(day: number, month: number, year?: number): boolean {

@@ -8,13 +8,16 @@ import {
   capitalize,
   daysBetween,
   daysInMonth,
+  formatDayMonth,
   formatLongDate,
-  MONTHS,
+  monthName,
   occurrenceInMonth,
   sameDay,
-  WEEKDAY_INITIALS,
+  weekdayColumn,
+  weekdayInitials,
   yearsAt,
 } from '@/lib/dates';
+import { strings } from '@/i18n/core';
 import type { Upcoming } from '@/lib/events';
 import { useStore } from '@/store/store';
 import { Fonts, Radius, Space, useTheme } from '@/theme/theme';
@@ -26,6 +29,7 @@ export default function CalendarScreen() {
   const today = new Date();
   const [cursor, setCursor] = useState({ y: today.getFullYear(), m: today.getMonth() + 1 });
   const [selected, setSelected] = useState<number>(today.getDate());
+  const s = strings().calendar;
 
   // Ocurrencias del mes, agrupadas por día.
   const byDay = useMemo(() => {
@@ -42,7 +46,7 @@ export default function CalendarScreen() {
   }, [events, cursor]);
 
   const total = daysInMonth(cursor.y, cursor.m);
-  const firstWeekday = (new Date(cursor.y, cursor.m - 1, 1).getDay() + 6) % 7; // lunes = 0
+  const firstWeekday = weekdayColumn(new Date(cursor.y, cursor.m - 1, 1).getDay());
   const cells: (number | null)[] = [
     ...Array.from({ length: firstWeekday }, () => null),
     ...Array.from({ length: total }, (_, i) => i + 1),
@@ -72,19 +76,19 @@ export default function CalendarScreen() {
     <View style={{ flex: 1 }}>
       <Screen>
         <PageTitle
-          kicker={monthCount === 0 ? 'Sin fechas este mes' : monthCount === 1 ? '1 fecha este mes' : `${monthCount} fechas este mes`}
-          title={`${capitalize(MONTHS[cursor.m - 1])} ${cursor.y !== today.getFullYear() ? cursor.y : ''}`.trim()}
+          kicker={monthCount === 0 ? s.countNone : s.count(monthCount)}
+          title={`${capitalize(monthName(cursor.m))} ${cursor.y !== today.getFullYear() ? cursor.y : ''}`.trim()}
           right={
             <View style={{ flexDirection: 'row', gap: Space.xs }}>
-              <IconButton icon="chevron-left" filled onPress={() => move(-1)} label="Mes anterior" />
-              <IconButton icon="chevron-right" filled onPress={() => move(1)} label="Mes siguiente" />
+              <IconButton icon="chevron-left" filled onPress={() => move(-1)} label={s.prevMonth} />
+              <IconButton icon="chevron-right" filled onPress={() => move(1)} label={s.nextMonth} />
             </View>
           }
         />
 
         <Card style={{ paddingHorizontal: Space.sm }}>
           <View style={styles.week}>
-            {WEEKDAY_INITIALS.map((d, i) => (
+            {weekdayInitials().map((d, i) => (
               <Text key={i} style={[styles.weekday, { color: c.textMuted, fontFamily: Fonts.medium }]}>
                 {d}
               </Text>
@@ -103,7 +107,7 @@ export default function CalendarScreen() {
                   onPress={() => setSelected(day)}
                   accessibilityRole="button"
                   accessibilityState={{ selected: isSelected }}
-                  accessibilityLabel={`${day} de ${MONTHS[cursor.m - 1]}${items.length ? `, ${items.length} ${items.length === 1 ? 'fecha' : 'fechas'}` : ''}`}>
+                  accessibilityLabel={s.dayA11y(formatDayMonth(day, cursor.m), items.length)}>
                   <View
                     style={[
                       styles.dayCircle,
@@ -132,7 +136,7 @@ export default function CalendarScreen() {
 
         <Section title={formatLongDate(selectedDate)}>
           {dayItems.length === 0 ? (
-            <EmptyState icon="calendar" title="Día libre" text="No hay nada anotado para este día." />
+            <EmptyState icon="calendar" title={s.freeDay} text={s.freeDayText} />
           ) : (
             dayItems.map((u) => <EventRow key={u.event.id} item={u} showCountdown={u.days >= 0} />)
           )}

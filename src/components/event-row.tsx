@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { strings } from '@/i18n/core';
 import { formatDayMonth, isMilestone, shortCountdown } from '@/lib/dates';
 import { initials, type Upcoming } from '@/lib/events';
 import { getKind } from '@/lib/kinds';
@@ -49,7 +50,7 @@ export function EventRow({ item, showCountdown = true }: { item: Upcoming; showC
   const kind = getKind(event.kind);
   const milestone = isMilestone(years);
   const sub: string[] = [
-    event.recurrence === 'monthly' ? `El ${event.day} de cada mes` : formatDayMonth(item.date.getDate(), item.date.getMonth() + 1),
+    event.recurrence === 'monthly' ? strings().dates.everyMonth(event.day) : formatDayMonth(item.date.getDate(), item.date.getMonth() + 1),
   ];
   if (years && kind.yearsLabel) sub.push(kind.yearsLabel(years));
   else if (!kind.person || event.kind !== 'birthday') sub.push(kind.label);

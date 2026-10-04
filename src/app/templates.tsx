@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 
 import { Button, Card, Field, Header, Screen, Sheet, T } from '@/components/ui';
+import { strings } from '@/i18n/core';
 import type { Template } from '@/lib/types';
 import { LIMITS } from '@/lib/validation';
 import { newId, useStore } from '@/store/store';
@@ -14,22 +15,23 @@ export default function TemplatesScreen() {
   const deleteTemplate = useStore((s) => s.deleteTemplate);
   const [editing, setEditing] = useState<Template | null>(null);
 
+  const s = strings().templates;
   const isExisting = editing ? templates.some((t) => t.id === editing.id) : false;
 
   const save = () => {
     if (!editing?.text.trim()) return;
     if (!templates.some((t) => t.id === editing.id) && templates.length >= LIMITS.templates)
-      return Alert.alert('Demasiados mensajes', 'Borrá alguno antes de crear otro.');
+      return Alert.alert(s.tooMany, s.tooManyText);
     saveTemplate({ ...editing, text: editing.text.trim() });
     setEditing(null);
   };
 
   const remove = () => {
     if (!editing) return;
-    Alert.alert('Borrar mensaje', '¿Seguro?', [
-      { text: 'Cancelar', style: 'cancel' },
+    Alert.alert(s.deleteTitle, strings().common.sure, [
+      { text: strings().common.cancel, style: 'cancel' },
       {
-        text: 'Borrar',
+        text: strings().common.delete,
         style: 'destructive',
         onPress: () => {
           deleteTemplate(editing.id);
@@ -41,10 +43,13 @@ export default function TemplatesScreen() {
 
   return (
     <Screen>
-      <Header title="Mensajes de saludo" />
+      <Header title={s.title} />
       <T muted style={{ marginBottom: Space.lg }}>
-        Escribí <T style={{ color: c.accent }}>{'{nombre}'}</T> y <T style={{ color: c.accent }}>{'{edad}'}</T> y Memora los
-        completa al saludar.
+        {s.introBefore}
+        <T style={{ color: c.accent }}>{s.nameToken}</T>
+        {s.introAnd}
+        <T style={{ color: c.accent }}>{s.ageToken}</T>
+        {s.introAfter}
       </T>
       <View style={{ gap: Space.md }}>
         {templates.map((t) => (
@@ -56,18 +61,18 @@ export default function TemplatesScreen() {
         ))}
       </View>
       <Button
-        label="Nuevo mensaje"
+        label={s.newTemplate}
         icon="plus"
         variant="secondary"
         onPress={() => setEditing({ id: newId(), text: '' })}
         style={{ marginTop: Space.lg }}
       />
 
-      <Sheet visible={editing !== null} onClose={() => setEditing(null)} title={isExisting ? 'Editar mensaje' : 'Nuevo mensaje'}>
+      <Sheet visible={editing !== null} onClose={() => setEditing(null)} title={isExisting ? s.editTemplate : s.newTemplate}>
         {editing ? (
           <>
             <Field
-              placeholder="¡Feliz cumple, {nombre}!"
+              placeholder={s.placeholder}
               value={editing.text}
               onChangeText={(text) => setEditing({ ...editing, text })}
               maxLength={LIMITS.template}
@@ -75,8 +80,8 @@ export default function TemplatesScreen() {
               autoFocus
               style={{ minHeight: 120, borderRadius: Radius.md }}
             />
-            <Button label="Guardar" icon="check" onPress={save} />
-            {isExisting ? <Button label="Borrar" icon="trash-2" variant="danger" onPress={remove} /> : null}
+            <Button label={strings().common.save} icon="check" onPress={save} />
+            {isExisting ? <Button label={strings().common.delete} icon="trash-2" variant="danger" onPress={remove} /> : null}
           </>
         ) : null}
       </Sheet>

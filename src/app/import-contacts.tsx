@@ -5,7 +5,9 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { Button, Card, Divider, EmptyState, Header, Screen, T, tap } from '@/components/ui';
+import { strings } from '@/i18n/core';
 import { formatDayMonth, isValidDate } from '@/lib/dates';
+import { getKind } from '@/lib/kinds';
 import type { KindId } from '@/lib/types';
 import { isValidPhone, LIMITS } from '@/lib/validation';
 import { useStore, type NewEvent } from '@/store/store';
@@ -30,6 +32,7 @@ export default function ImportContactsScreen() {
   const [status, setStatus] = useState<Status>(Platform.OS === 'web' ? 'unsupported' : 'loading');
   const [items, setItems] = useState<Candidate[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const s = strings().contacts;
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
@@ -66,12 +69,12 @@ export default function ImportContactsScreen() {
           });
         }
       });
-      found.sort((a, b) => a.title.localeCompare(b.title));
+      found.sort((a, b) => a.title.localeCompare(b.title, strings().locale));
       setItems(found);
       setSelected(new Set(found.filter((f) => !f.exists).map((f) => f.key)));
       setStatus('ready');
     })().catch(() => {
-      Alert.alert('Ups', 'No se pudieron leer los contactos.');
+      Alert.alert(strings().common.oops, strings().contacts.readFailed);
       setStatus('denied');
     });
   }, []);
@@ -97,7 +100,7 @@ export default function ImportContactsScreen() {
       phone: i.phone,
     }));
     addEvents(list);
-    Alert.alert('¡Listo!', `Se importaron ${list.length} ${list.length === 1 ? 'fecha' : 'fechas'}.`);
+    Alert.alert(s.done, s.doneText(list.length));
     router.back();
   };
 
@@ -105,33 +108,33 @@ export default function ImportContactsScreen() {
     <Screen footer={status === 'ready' && items.length > 0 ? (
       <View style={[styles.footer, { backgroundColor: c.bg, borderColor: c.border }]}>
         <Button
-          label={selected.size === 0 ? 'Elegí al menos una' : `Importar ${selected.size}`}
+          label={selected.size === 0 ? s.pickOne : s.importN(selected.size)}
           icon="download"
           disabled={selected.size === 0}
           onPress={doImport}
         />
       </View>
     ) : undefined}>
-      <Header title="Importar contactos" />
+      <Header title={s.title} />
       {status === 'loading' ? (
         <View style={{ paddingVertical: Space.xxl, alignItems: 'center', gap: Space.md }}>
           <ActivityIndicator color={c.accent} />
-          <T muted>Buscando cumpleaños en tus contactos…</T>
+          <T muted>{s.searching}</T>
         </View>
       ) : null}
       {status === 'unsupported' ? (
-        <EmptyState icon="phone" title="Solo en el celular" text="Importar contactos funciona en la app de Android." />
+        <EmptyState icon="phone" title={strings().common.onlyOnPhone} text={s.onlyPhoneText} />
       ) : null}
       {status === 'denied' ? (
-        <EmptyState icon="lock" title="Sin permiso" text="Para importar, permití que Memora lea tus contactos desde los ajustes del teléfono." />
+        <EmptyState icon="lock" title={s.noPermission} text={s.noPermissionText} />
       ) : null}
       {status === 'ready' && items.length === 0 ? (
-        <EmptyState icon="question" title="No encontramos fechas" text="Ninguno de tus contactos tiene cumpleaños o aniversario guardado." />
+        <EmptyState icon="question" title={s.noneFound} text={s.noneFoundText} />
       ) : null}
       {status === 'ready' && items.length > 0 ? (
         <>
           <T muted style={{ marginBottom: Space.lg }}>
-            Encontramos {items.length} {items.length === 1 ? 'fecha' : 'fechas'}. Elegí cuáles sumar.
+            {s.found(items.length)}
           </T>
           <Card style={{ paddingVertical: Space.xs }}>
             {items.map((i, idx) => {
@@ -144,9 +147,9 @@ export default function ImportContactsScreen() {
                     <View style={{ flex: 1 }}>
                       <T style={{ fontFamily: Fonts.medium }}>{i.title}</T>
                       <T variant="small" muted>
-                        {i.kind === 'birthday' ? 'Cumpleaños' : 'Aniversario'} · {formatDayMonth(i.day, i.month)}
-                        {i.year ? ` de ${i.year}` : ''}
-                        {i.exists ? ' · ya la tenés' : ''}
+                        {getKind(i.kind).label} · {formatDayMonth(i.day, i.month)}
+                        {i.year ? s.ofYear(i.year) : ''}
+                        {i.exists ? s.already : ''}
                       </T>
                     </View>
                   </Pressable>

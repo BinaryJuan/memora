@@ -57,14 +57,38 @@ La primera vez, el `.aab` se sube a mano en Play Console. Después se puede auto
   > • Saludá por WhatsApp o SMS con un toque.
   > • Guardá un recuerdo de cada año, con foto.
   > • Calendario, búsqueda y estadísticas.
-  > • Modo oscuro y bloqueo con huella.
+  > • Notas sueltas, con colores, para todo lo demás.
+  > • Widget con las próximas fechas.
+  > • Modo oscuro y bloqueo con huella. En español e inglés.
   >
   > Tus datos quedan en tu teléfono: sin cuentas, sin publicidad, sin vueltas. Si querés, exportás un respaldo y lo guardás donde prefieras.
+
+### En inglés
+
+En Play Console: **Ficha principal de Play Store → Administrar traducciones → Agregar traducciones propias → Inglés (Estados Unidos)**, y pegar esto. Las capturas en inglés son opcionales (si no hay, Play muestra las mismas).
+
+- **Short description:**
+  > Birthdays, anniversaries and important dates, with reminders right on time.
+- **Full description:**
+  > Memora helps you never forget the dates that matter.
+  >
+  > Save birthdays, anniversaries or anything you need to remember, and Memora reminds you on the day, a few days before or whenever you like. Every Monday it tells you what's coming up that week.
+  >
+  > • Tags to organize your people: family, friends, work.
+  > • Gift ideas, gifts you already gave and what each person likes.
+  > • Say hi on WhatsApp or SMS with one tap.
+  > • Keep a memory of each year, with a photo.
+  > • Calendar, search and statistics.
+  > • Free-form notes, with colors, for everything else.
+  > • Home screen widget with your upcoming dates.
+  > • Dark mode and fingerprint lock. In English and Spanish.
+  >
+  > Your data stays on your phone: no accounts, no ads, no fuss. If you want, export a backup and keep it wherever you like.
 
 ## 5. Formularios de Play Console
 
 - **Seguridad de los datos:** la app **no recolecta ni comparte datos** (nada sale del teléfono). Marcá que no recolecta datos.
-- **Permisos:** la app pide notificaciones, alarmas exactas ("Alarmas y recordatorios", para que los avisos no se atrasen; la persona lo activa), contactos (solo lectura), huella y vibración. Los demás que traían las librerías (cámara, micrófono, almacenamiento, escribir contactos) están bloqueados en `app.json`.
+- **Permisos:** la app pide notificaciones, alarmas exactas ("Alarmas y recordatorios", para que los avisos no se atrasen; la persona lo activa), contactos (solo lectura), huella y vibración. Los demás que traían las librerías (cámara, micrófono, almacenamiento, escribir contactos, reproducción en segundo plano) están bloqueados en `app.json`. El sonido de cumpleaños no necesita permisos.
 - **Clasificación de contenido:** completar el cuestionario; no tiene contenido sensible.
 - **Público objetivo:** mayores de 13 años. Si marcás menores, aplican las reglas de apps para familias, que son mucho más estrictas.
 - **Anuncios:** no tiene.

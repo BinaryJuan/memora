@@ -3,6 +3,7 @@ import type { IconKey } from '@/components/icon-data';
 export type KindId = 'birthday' | 'anniversary' | 'special' | 'memorial' | 'reminder';
 export type Recurrence = 'yearly' | 'monthly' | 'once';
 export type ThemeMode = 'system' | 'light' | 'dark';
+export type LanguagePref = 'system' | 'es' | 'en';
 
 export interface GiftIdea {
   id: string;
@@ -70,6 +71,22 @@ export interface Settings {
   lockEnabled: boolean;
   /** Ya vio la bienvenida. */
   onboarded: boolean;
+  /** 'system' sigue el idioma del teléfono. */
+  language: LanguagePref;
+  /** Sonidito al abrir la app los días de cumple. */
+  birthdaySound: boolean;
+}
+
+/** Nota suelta, al estilo Google Keep (no está atada a ninguna fecha). */
+export interface Note {
+  id: string;
+  title: string;
+  text: string;
+  /** Uno de NOTE_COLORS, o undefined para el color de fondo normal. */
+  color?: string;
+  pinned: boolean;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface BackupData {
@@ -79,5 +96,7 @@ export interface BackupData {
   events: MemoraEvent[];
   tags: Tag[];
   templates: Template[];
+  /** Desde que existen las notas. Los respaldos viejos no la traen. */
+  notes?: Note[];
   settings: Settings;
 }

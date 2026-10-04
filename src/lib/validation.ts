@@ -1,14 +1,16 @@
 import { isIconKey, type IconKey } from '@/components/icon-data';
 import { isValidDate } from './dates';
-import { KINDS, LEGACY_TAG_COLORS, OFFSET_OPTIONS, TAG_COLORS } from './kinds';
+import { strings } from '@/i18n/core';
+import { KIND_IDS, LEGACY_TAG_COLORS, NOTE_COLORS, OFFSET_DAYS, RECURRENCE_IDS, TAG_COLORS } from './kinds';
 import type {
   BackupData,
   GiftGiven,
   GiftIdea,
   KindId,
+  LanguagePref,
   Memory,
   MemoraEvent,
-  Recurrence,
+  Note,
   Settings,
   Tag,
   Template,
@@ -30,16 +32,17 @@ export const LIMITS = {
   tags: 50,
   templates: 30,
   listItems: 200,
+  noteTitle: 120,
+  noteText: 5000,
+  noteCount: 2000,
   backupBytes: 5 * 1024 * 1024,
 };
 
 export const MIN_YEAR = 1900;
 export const MAX_YEAR = 2200;
 
-const KIND_IDS = KINDS.map((k) => k.id);
-const RECURRENCE_IDS: Recurrence[] = ['yearly', 'monthly', 'once'];
 const THEMES: ThemeMode[] = ['system', 'light', 'dark'];
-const OFFSET_DAYS = OFFSET_OPTIONS.map((o) => o.days);
+const LANGUAGES: LanguagePref[] = ['system', 'es', 'en'];
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 const PHONE_CHARS = /^[\d+\s().-]+$/;
@@ -213,6 +216,27 @@ function cleanSettings(v: unknown, fallback: Settings): Settings {
     // El bloqueo nunca se toma de un archivo: lo decide quien usa este teléfono.
     lockEnabled: fallback.lockEnabled,
     onboarded: fallback.onboarded,
+    // El idioma tampoco: es el de quien está usando la app ahora.
+    language: oneOf(fallback.language, LANGUAGES, 'system'),
+    birthdaySound: typeof v.birthdaySound === 'boolean' ? v.birthdaySound : fallback.birthdaySound,
+  };
+}
+
+function cleanNote(v: unknown): Note | null {
+  if (!isObj(v)) return null;
+  const title = str(v.title, LIMITS.noteTitle) ?? '';
+  const text = str(v.text, LIMITS.noteText) ?? '';
+  if (!title && !text) return null;
+  const time = (t: unknown) => (typeof t === 'number' && Number.isFinite(t) && t > 0 ? t : Date.now());
+  const color = typeof v.color === 'string' && NOTE_COLORS.includes(v.color) ? v.color : undefined;
+  return {
+    id: id(v.id, freshId),
+    title,
+    text,
+    color,
+    pinned: v.pinned === true,
+    createdAt: time(v.createdAt),
+    updatedAt: time(v.updatedAt),
   };
 }
 
@@ -237,10 +261,10 @@ export class BackupError extends Error {}
  */
 export function sanitizeBackup(raw: unknown, currentSettings: Settings, photoPrefix: string | null): BackupData {
   if (!isObj(raw) || raw.app !== 'memora' || !Array.isArray(raw.events)) {
-    throw new BackupError('El archivo no es un respaldo de Memora.');
+    throw new BackupError(strings().backup.notMemora);
   }
   if (typeof raw.version === 'number' && raw.version > 1) {
-    throw new BackupError('El respaldo es de una versión más nueva de Memora. Actualizá la app y probá de nuevo.');
+    throw new BackupError(strings().backup.newer);
   }
 
   const tags = dedupeById(
@@ -263,6 +287,12 @@ export function sanitizeBackup(raw: unknown, currentSettings: Settings, photoPre
       .filter((t): t is Template => t !== null),
   );
 
+  const notes = dedupeById(
+    list(raw.notes, LIMITS.noteCount)
+      .map(cleanNote)
+      .filter((n): n is Note => n !== null),
+  );
+
   return {
     app: 'memora',
     version: 1,
@@ -270,6 +300,7 @@ export function sanitizeBackup(raw: unknown, currentSettings: Settings, photoPre
     events,
     tags,
     templates,
+    notes,
     settings: cleanSettings(raw.settings, currentSettings),
   };
 }

@@ -1,7 +1,12 @@
-import { describe, expect, it } from '@jest/globals';
+import { beforeAll, describe, expect, it } from '@jest/globals';
+
+import { setLanguage } from '@/i18n/core';
 
 import { planAll, splitPlan } from '../notification-plan';
 import type { MemoraEvent, Settings } from '../types';
+
+// Los textos esperados en estas pruebas están en español.
+beforeAll(() => setLanguage('es'));
 
 const settings: Settings = {
   theme: 'system',
@@ -11,6 +16,8 @@ const settings: Settings = {
   weeklySummary: false,
   lockEnabled: false,
   onboarded: true,
+  language: 'es',
+  birthdaySound: true,
 };
 
 function ev(partial: Partial<MemoraEvent>): MemoraEvent {

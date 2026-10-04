@@ -4,6 +4,7 @@ import * as IntentLauncher from 'expo-intent-launcher';
 import * as Sharing from 'expo-sharing';
 import { Alert, Linking, Platform } from 'react-native';
 
+import { strings } from '@/i18n/core';
 import { newId } from '@/store/store';
 import { dateKey } from './dates';
 import type { BackupData, Settings } from './types';
@@ -52,7 +53,8 @@ export function deletePhoto(uri?: string) {
 export async function exportBackup(data: Omit<BackupData, 'app' | 'version' | 'exportedAt'>) {
   const backup: BackupData = { app: 'memora', version: 1, exportedAt: new Date().toISOString(), ...data };
   const json = JSON.stringify(backup, null, 2);
-  const name = `memora-respaldo-${dateKey(new Date())}.json`;
+  const b = strings().backup;
+  const name = b.fileName(dateKey(new Date()));
 
   if (Platform.OS === 'web') {
     const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
@@ -70,10 +72,10 @@ export async function exportBackup(data: Omit<BackupData, 'app' | 'version' | 'e
   file.write(json);
   try {
     if (!(await Sharing.isAvailableAsync())) {
-      Alert.alert('No se puede compartir', 'Este dispositivo no permite compartir archivos.');
+      Alert.alert(b.cantShare, b.cantShareText);
       return;
     }
-    await Sharing.shareAsync(file.uri, { mimeType: 'application/json', dialogTitle: 'Guardar respaldo de Memora' });
+    await Sharing.shareAsync(file.uri, { mimeType: 'application/json', dialogTitle: b.dialogTitle });
   } finally {
     // El archivo tiene datos personales: no lo dejamos tirado en la caché.
     try {
@@ -88,18 +90,18 @@ export async function exportBackup(data: Omit<BackupData, 'app' | 'version' | 'e
  */
 export async function pickBackup(currentSettings: Settings): Promise<BackupData | null> {
   if (Platform.OS === 'web') {
-    Alert.alert('No disponible', 'Importar respaldos funciona en el celular.');
+    Alert.alert(strings().common.notAvailable, strings().backup.onlyPhoneText);
     return null;
   }
   const res = await File.pickFileAsync({ mimeTypes: ['application/json', 'text/plain', '*/*'] });
   if (res.canceled) return null;
   const file = res.result;
-  if ((file.size ?? 0) > LIMITS.backupBytes) throw new BackupError('El archivo es demasiado grande para ser un respaldo.');
+  if ((file.size ?? 0) > LIMITS.backupBytes) throw new BackupError(strings().backup.tooBig);
   let raw: unknown;
   try {
     raw = JSON.parse(await file.text());
   } catch {
-    throw new BackupError('El archivo está dañado o no es un respaldo de Memora.');
+    throw new BackupError(strings().backup.damaged);
   }
   return sanitizeBackup(raw, currentSettings, photosDirUri());
 }
@@ -124,7 +126,7 @@ export async function greet(channel: GreetChannel, phone: string | undefined, me
         // No está instalado: probamos el siguiente.
       }
     }
-    Alert.alert('No se pudo abrir', 'Revisá que WhatsApp esté instalado en el teléfono.');
+    Alert.alert(strings().common.couldNotOpen, strings().common.whatsappNotInstalled);
     return;
   }
   let url: string;
@@ -140,6 +142,6 @@ export async function greet(channel: GreetChannel, phone: string | undefined, me
   try {
     await Linking.openURL(url);
   } catch {
-    Alert.alert('No se pudo abrir', 'Revisá que la app esté instalada en el teléfono.');
+    Alert.alert(strings().common.couldNotOpen, strings().common.appNotInstalled);
   }
 }

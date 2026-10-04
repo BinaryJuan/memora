@@ -4,6 +4,7 @@ import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { captureRef } from 'react-native-view-shot';
 
+import { strings } from '@/i18n/core';
 import { formatDayMonth } from '@/lib/dates';
 import { firstName, initials } from '@/lib/events';
 import { getKind } from '@/lib/kinds';
@@ -16,16 +17,17 @@ import { Button, Chip, ChipRow, Sheet, T } from './ui';
 const BLOB = 'M60 14c20 0 38 13 42 32s-6 40-24 50-42 8-56-6S8 52 18 34 40 14 60 14z';
 
 const PALETTES = {
-  terracota: { label: 'Terracota', bg: '#B56E4D', fg: '#FBF4EA', blob: '#C98A6B', accent: '#F2D4C2' },
-  salvia: { label: 'Salvia', bg: '#7D8F6B', fg: '#F6F3EA', blob: '#94A684', accent: '#E1E8D3' },
-  arena: { label: 'Arena', bg: '#E9DFCF', fg: '#3D3229', blob: '#DCCBB2', accent: '#B56E4D' },
+  terracota: { bg: '#B56E4D', fg: '#FBF4EA', blob: '#C98A6B', accent: '#F2D4C2' },
+  salvia: { bg: '#7D8F6B', fg: '#F6F3EA', blob: '#94A684', accent: '#E1E8D3' },
+  arena: { bg: '#E9DFCF', fg: '#3D3229', blob: '#DCCBB2', accent: '#B56E4D' },
 } as const;
 type PaletteId = keyof typeof PALETTES;
 
 function heading(event: MemoraEvent): string {
-  if (event.kind === 'birthday') return '¡Feliz cumple!';
-  if (event.kind === 'anniversary') return '¡Feliz aniversario!';
-  return '¡Hoy es el día!';
+  const s = strings().card;
+  if (event.kind === 'birthday') return s.birthday;
+  if (event.kind === 'anniversary') return s.anniversary;
+  return s.other;
 }
 
 function Card({ event, years, palette }: { event: MemoraEvent; years: number | null; palette: PaletteId }) {
@@ -51,7 +53,7 @@ function Card({ event, years, palette }: { event: MemoraEvent; years: number | n
         </Text>
         {years ? (
           <Text style={[styles.years, { color: p.fg }]}>
-            {years} <Text style={styles.yearsLabel}>{years === 1 ? 'año' : 'años'}</Text>
+            {years} <Text style={styles.yearsLabel}>{strings().common.years(years).replace(/^\d+\s/, '')}</Text>
           </Text>
         ) : null}
         <Text style={[styles.date, { color: p.fg }]}>{formatDayMonth(event.day, event.month)}</Text>
@@ -75,37 +77,38 @@ export function ShareCardSheet({
   const ref = useRef<View>(null);
   const [palette, setPalette] = useState<PaletteId>('terracota');
   const [busy, setBusy] = useState(false);
+  const s = strings().card;
 
   const share = async () => {
     if (Platform.OS === 'web') {
-      Alert.alert('Solo en el celular', 'Compartir la tarjeta funciona en la app de Android.');
+      Alert.alert(strings().common.onlyOnPhone, s.onlyPhoneText);
       return;
     }
     setBusy(true);
     try {
       const uri = await captureRef(ref, { format: 'png', quality: 1, result: 'tmpfile', width: 1080, height: 1350 });
-      await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Compartir tarjeta' });
+      await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: s.shareTitle });
     } catch {
-      Alert.alert('Ups', 'No se pudo crear la imagen.');
+      Alert.alert(strings().common.oops, s.failed);
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Sheet visible={visible} onClose={onClose} title="Tarjeta para compartir">
+    <Sheet visible={visible} onClose={onClose} title={s.title}>
       <View ref={ref} collapsable={false} style={styles.capture}>
         <Card event={event} years={years} palette={palette} />
       </View>
       <ChipRow>
         {(Object.keys(PALETTES) as PaletteId[]).map((id) => (
-          <Chip key={id} label={PALETTES[id].label} color={PALETTES[id].bg} selected={palette === id} onPress={() => setPalette(id)} />
+          <Chip key={id} label={s.palettes[id]} color={PALETTES[id].bg} selected={palette === id} onPress={() => setPalette(id)} />
         ))}
       </ChipRow>
       <T variant="small" muted>
-        Se comparte como imagen: mandásela por WhatsApp o subila a tus historias.
+        {s.hint}
       </T>
-      <Button label={busy ? 'Preparando…' : 'Compartir'} icon="share-2" disabled={busy} onPress={share} />
+      <Button label={busy ? s.preparing : s.share} icon="share-2" disabled={busy} onPress={share} />
     </Sheet>
   );
 }

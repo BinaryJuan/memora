@@ -2,18 +2,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 
-import type { BackupData, MemoraEvent, Settings, Tag, Template } from '@/lib/types';
+import { deviceLang, LANGS, setLanguage, strings, stringsFor } from '@/i18n/core';
+import type { BackupData, MemoraEvent, Note, Settings, Tag, Template } from '@/lib/types';
 import { normalizeTag } from '@/lib/validation';
 
 export function newId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
+/** Las etiquetas y los mensajes de saludo de entrada salen en el idioma del teléfono. */
+const firstLang = stringsFor(deviceLang());
+
 const DEFAULT_TAGS: Tag[] = [
-  { id: 'familia', name: 'Familia', icon: 'house', color: '#C98A6B' },
-  { id: 'amigos', name: 'Amigos', icon: 'friends', color: '#94A684' },
-  { id: 'trabajo', name: 'Trabajo', icon: 'briefcase', color: '#8EA2B0' },
-  { id: 'pareja', name: 'Pareja', icon: 'heart', color: '#B596A3' },
+  { id: 'familia', name: firstLang.tags.defaults.familia, icon: 'house', color: '#C98A6B' },
+  { id: 'amigos', name: firstLang.tags.defaults.amigos, icon: 'friends', color: '#94A684' },
+  { id: 'trabajo', name: firstLang.tags.defaults.trabajo, icon: 'briefcase', color: '#8EA2B0' },
+  { id: 'pareja', name: firstLang.tags.defaults.pareja, icon: 'heart', color: '#B596A3' },
 ];
 
 /**
@@ -36,11 +40,27 @@ const safeStorage: StateStorage = {
   removeItem: (name) => AsyncStorage.removeItem(name),
 };
 
-const DEFAULT_TEMPLATES: Template[] = [
-  { id: 't1', text: '¡Feliz cumple, {nombre}! 🎉 Que tengas un día hermoso.' },
-  { id: 't2', text: '¡Feliz cumpleaños, {nombre}! Que los {edad} te encuentren genial. ¡Un abrazo grande! 🥳' },
-  { id: 't3', text: '¡Muy feliz día, {nombre}! Te mando un abrazo enorme. 💛' },
-];
+const DEFAULT_TEMPLATES: Template[] = firstLang.templates.defaults.map((text, i) => ({ id: `t${i + 1}`, text }));
+
+/**
+ * Al cambiar de idioma, las etiquetas y los mensajes que vienen de fábrica se traducen solos,
+ * siempre que sigan como venían (si alguien los editó, se respetan).
+ */
+function translateDefaults(tags: Tag[], templates: Template[]): Pick<State, 'tags' | 'templates'> {
+  const now = strings();
+  const all = LANGS.map(stringsFor);
+  return {
+    tags: tags.map((t) => {
+      const fresh = now.tags.defaults[t.id];
+      return fresh && all.some((l) => l.tags.defaults[t.id] === t.name) ? { ...t, name: fresh } : t;
+    }),
+    templates: templates.map((t) => {
+      const i = Number(t.id.replace(/^t/, '')) - 1;
+      const fresh = /^t\d$/.test(t.id) ? now.templates.defaults[i] : undefined;
+      return fresh && all.some((l) => l.templates.defaults[i] === t.text) ? { ...t, text: fresh } : t;
+    }),
+  };
+}
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
@@ -51,6 +71,8 @@ export const DEFAULT_SETTINGS: Settings = {
   weeklySummary: true,
   lockEnabled: false,
   onboarded: false,
+  language: 'system',
+  birthdaySound: true,
 };
 
 export type NewEvent = Omit<MemoraEvent, 'id' | 'createdAt' | 'giftIdeas' | 'giftsGiven' | 'memories' | 'greetedOn'> &
@@ -60,6 +82,7 @@ interface State {
   events: MemoraEvent[];
   tags: Tag[];
   templates: Template[];
+  notes: Note[];
   settings: Settings;
   hydrated: boolean;
 
@@ -73,6 +96,12 @@ interface State {
 
   saveTag: (tag: Tag) => void;
   deleteTag: (id: string) => void;
+
+  /** Crea o actualiza una nota (se identifica por el id). */
+  saveNote: (note: Note) => void;
+  deleteNote: (id: string) => void;
+  /** Vuelve a poner una nota borrada (para "Deshacer"). */
+  restoreNote: (note: Note) => void;
 
   saveTemplate: (t: Template) => void;
   deleteTemplate: (id: string) => void;
@@ -99,6 +128,7 @@ export const useStore = create<State>()(
       events: [],
       tags: DEFAULT_TAGS,
       templates: DEFAULT_TEMPLATES,
+      notes: [],
       settings: DEFAULT_SETTINGS,
       hydrated: false,
 
@@ -141,6 +171,15 @@ export const useStore = create<State>()(
           ),
         })),
 
+      saveNote: (note) =>
+        set((s) => ({
+          notes: s.notes.some((n) => n.id === note.id)
+            ? s.notes.map((n) => (n.id === note.id ? note : n))
+            : [note, ...s.notes],
+        })),
+      deleteNote: (id) => set((s) => ({ notes: s.notes.filter((n) => n.id !== id) })),
+      restoreNote: (note) => set((s) => (s.notes.some((n) => n.id === note.id) ? s : { notes: [note, ...s.notes] })),
+
       saveTemplate: (t) =>
         set((s) => ({
           templates: s.templates.some((x) => x.id === t.id)
@@ -149,7 +188,14 @@ export const useStore = create<State>()(
         })),
       deleteTemplate: (id) => set((s) => ({ templates: s.templates.filter((t) => t.id !== id) })),
 
-      updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
+      updateSettings: (patch) => {
+        // Antes de avisar del cambio, así lo que se redibuja ya sale en el idioma nuevo.
+        if (patch.language) setLanguage(patch.language);
+        set((s) => ({
+          settings: { ...s.settings, ...patch },
+          ...(patch.language ? translateDefaults(s.tags, s.templates) : {}),
+        }));
+      },
 
       // `data` tiene que venir ya limpio de sanitizeBackup().
       importBackup: (data, mode) =>
@@ -159,16 +205,25 @@ export const useStore = create<State>()(
               events: data.events,
               tags: data.tags,
               templates: data.templates,
-              settings: { ...DEFAULT_SETTINGS, ...data.settings, lockEnabled: s.settings.lockEnabled, onboarded: true },
+              notes: data.notes ?? [],
+              settings: {
+                ...DEFAULT_SETTINGS,
+                ...data.settings,
+                lockEnabled: s.settings.lockEnabled,
+                language: s.settings.language,
+                onboarded: true,
+              },
             };
           }
           const eventIds = new Set(s.events.map((e) => e.id));
           const tagIds = new Set(s.tags.map((t) => t.id));
           const tplIds = new Set(s.templates.map((t) => t.id));
+          const noteIds = new Set(s.notes.map((n) => n.id));
           return {
             events: [...s.events, ...data.events.filter((e) => !eventIds.has(e.id))],
             tags: [...s.tags, ...data.tags.filter((t) => !tagIds.has(t.id))],
             templates: [...s.templates, ...data.templates.filter((t) => !tplIds.has(t.id))],
+            notes: [...s.notes, ...(data.notes ?? []).filter((n) => !noteIds.has(n.id))],
           };
         }),
     }),
@@ -197,8 +252,9 @@ export const useStore = create<State>()(
         return { ...current, ...p, settings: { ...current.settings, ...p.settings } };
       },
       storage: createJSONStorage(() => safeStorage),
-      partialize: ({ events, tags, templates, settings }) => ({ events, tags, templates, settings }),
-      onRehydrateStorage: () => () => {
+      partialize: ({ events, tags, templates, notes, settings }) => ({ events, tags, templates, notes, settings }),
+      onRehydrateStorage: () => (state) => {
+        setLanguage(state?.settings.language);
         useStore.setState({ hydrated: true });
       },
     },

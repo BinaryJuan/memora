@@ -35,9 +35,10 @@ export function firstName(title: string): string {
   return title.trim().split(/\s+/)[0] ?? title;
 }
 
+/** Completa {nombre} y {edad} (o {name} y {age}, en inglés) en un mensaje de saludo. */
 export function fillTemplate(text: string, e: MemoraEvent, years: number | null): string {
-  let out = text.replaceAll('{nombre}', firstName(e.title));
-  out = years ? out.replaceAll('{edad}', String(years)) : out.replace(/\s*(los\s+)?\{edad\}/g, '');
+  let out = text.replace(/\{(nombre|name)\}/g, firstName(e.title));
+  out = years ? out.replace(/\{(edad|age)\}/g, String(years)) : out.replace(/\s*(los\s+)?\{(edad|age)\}/g, '');
   return out;
 }
 
@@ -47,4 +48,12 @@ export function initials(title: string): string {
     .split(/\s+/)
     .filter((w) => w && !['y', 'e', '&', 'de', 'del'].includes(w.toLowerCase()));
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
+}
+
+/** Para buscar sin importar mayúsculas ni tildes ("Martín" = "martin"). */
+export function normalizeSearch(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase();
 }

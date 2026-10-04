@@ -26,6 +26,7 @@ import {
   tap,
   type IconName,
 } from '@/components/ui';
+import { strings } from '@/i18n/core';
 import { countdownLabel, dateKey, formatEventDate, isMilestone, zodiacSign } from '@/lib/dates';
 import { effectiveOffsets, fillTemplate, upcomingOf } from '@/lib/events';
 import { getKind, offsetsSummary } from '@/lib/kinds';
@@ -69,12 +70,13 @@ function GiftsSection({ event, occurrenceYear }: { event: MemoraEvent; occurrenc
   const updateEvent = useStore((s) => s.updateEvent);
   const [text, setText] = useState('');
   const [budget, setBudget] = useState('');
+  const s = strings().event;
 
   const add = () => {
     if (!text.trim()) return;
-    if (event.giftIdeas.length >= LIMITS.listItems) return Alert.alert('Demasiadas ideas', 'Borrá alguna antes de sumar otra.');
+    if (event.giftIdeas.length >= LIMITS.listItems) return Alert.alert(s.tooManyGifts, s.tooManyGiftsText);
     const b = budget.trim() ? parseBudget(budget) : undefined;
-    if (b === null) return Alert.alert('Presupuesto inválido', 'Escribí solo el número, por ejemplo 15000.');
+    if (b === null) return Alert.alert(s.badBudget, s.badBudgetText);
     updateEvent(event.id, {
       giftIdeas: [...event.giftIdeas, { id: newId(), text: text.trim(), budget: b }],
     });
@@ -97,8 +99,8 @@ function GiftsSection({ event, occurrenceYear }: { event: MemoraEvent; occurrenc
     if (!idea) return;
     updateEvent(event.id, { giftIdeas: event.giftIdeas.filter((g) => g.id !== id) });
     showToast({
-      message: 'Borraste una idea de regalo',
-      actionLabel: 'Deshacer',
+      message: s.giftDeleted,
+      actionLabel: strings().common.undo,
       onAction: () => restoreItem(event.id, 'giftIdeas', idea),
     });
   };
@@ -107,8 +109,8 @@ function GiftsSection({ event, occurrenceYear }: { event: MemoraEvent; occurrenc
     if (!gift) return;
     updateEvent(event.id, { giftsGiven: event.giftsGiven.filter((g) => g.id !== id) });
     showToast({
-      message: 'Borraste un regalo del historial',
-      actionLabel: 'Deshacer',
+      message: s.givenDeleted,
+      actionLabel: strings().common.undo,
       onAction: () => restoreItem(event.id, 'giftsGiven', gift),
     });
   };
@@ -118,37 +120,39 @@ function GiftsSection({ event, occurrenceYear }: { event: MemoraEvent; occurrenc
 
   return (
     <>
-      <Section title="Ideas de regalo" action={total > 0 ? <T variant="small" muted>Total ${total.toLocaleString('es-AR')}</T> : undefined}>
+      <Section
+        title={s.gifts}
+        action={total > 0 ? <T variant="small" muted>{s.giftsTotal(total.toLocaleString(strings().locale))}</T> : undefined}>
         <Card style={{ gap: Space.sm }}>
           {event.giftIdeas.map((g) => (
             <View key={g.id} style={styles.listRow}>
               <Icon name="gift" size={22} />
               <View style={{ flex: 1 }}>
                 <T>{g.text}</T>
-                {g.budget ? <T variant="small" muted>${g.budget.toLocaleString('es-AR')}</T> : null}
+                {g.budget ? <T variant="small" muted>${g.budget.toLocaleString(strings().locale)}</T> : null}
               </View>
-              <IconButton icon="check" label="Ya se lo regalé" color={c.success} onPress={() => markGiven(g.id)} />
-              <IconButton icon="x" label="Borrar idea" color={c.textMuted} onPress={() => removeIdea(g.id)} />
+              <IconButton icon="check" label={s.giftGiven} color={c.success} onPress={() => markGiven(g.id)} />
+              <IconButton icon="x" label={s.giftDelete} color={c.textMuted} onPress={() => removeIdea(g.id)} />
             </View>
           ))}
           {event.giftIdeas.length > 0 ? <Divider /> : null}
           <View style={{ flexDirection: 'row', gap: Space.sm, alignItems: 'center' }}>
             <View style={{ flex: 1 }}>
-              <Field placeholder="Nueva idea…" value={text} onChangeText={setText} onSubmitEditing={add} maxLength={LIMITS.gift} />
+              <Field placeholder={s.giftNew} value={text} onChangeText={setText} onSubmitEditing={add} maxLength={LIMITS.gift} />
             </View>
             <View style={{ width: 90 }}>
               <Field placeholder="$" value={budget} onChangeText={setBudget} keyboardType="decimal-pad" maxLength={14} />
             </View>
-            <IconButton icon="plus" filled label="Agregar idea" onPress={add} />
+            <IconButton icon="plus" filled label={s.giftAdd} onPress={add} />
           </View>
           <T variant="small" muted>
-            Tocá ✓ cuando se lo regales y pasa al historial.
+            {s.giftHint}
           </T>
         </Card>
       </Section>
 
       {given.length > 0 ? (
-        <Section title="Regalos que ya hiciste">
+        <Section title={s.givenTitle}>
           <Card style={{ gap: Space.xs }}>
             {given.map((g) => (
               <View key={g.id} style={styles.listRow}>
@@ -156,7 +160,7 @@ function GiftsSection({ event, occurrenceYear }: { event: MemoraEvent; occurrenc
                   {g.year}
                 </T>
                 <T style={{ flex: 1 }}>{g.text}</T>
-                <IconButton icon="x" label="Borrar" color={c.textMuted} onPress={() => removeGiven(g.id)} />
+                <IconButton icon="x" label={strings().common.delete} color={c.textMuted} onPress={() => removeGiven(g.id)} />
               </View>
             ))}
           </Card>
@@ -173,12 +177,13 @@ function MemoriesSection({ event }: { event: MemoraEvent }) {
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const [text, setText] = useState('');
   const [photo, setPhoto] = useState<string | undefined>();
+  const s = strings().event;
 
   const save = () => {
     const y = parseInt(year, 10);
-    if (!text.trim() && !photo) return Alert.alert('Recuerdo vacío', 'Escribí algo o agregá una foto.');
-    if (Number.isNaN(y) || y < MIN_YEAR || y > MAX_YEAR) return Alert.alert('Año inválido', 'Escribí el año con 4 cifras.');
-    if (event.memories.length >= LIMITS.listItems) return Alert.alert('Demasiados recuerdos', 'Borrá alguno antes de sumar otro.');
+    if (!text.trim() && !photo) return Alert.alert(s.emptyMemory, s.emptyMemoryText);
+    if (Number.isNaN(y) || y < MIN_YEAR || y > MAX_YEAR) return Alert.alert(s.badYear, s.badYearText);
+    if (event.memories.length >= LIMITS.listItems) return Alert.alert(s.tooManyMemories, s.tooManyMemoriesText);
     updateEvent(event.id, { memories: [...event.memories, { id: newId(), year: y, text: text.trim(), photoUri: photo }] });
     setOpen(false);
     setText('');
@@ -197,8 +202,8 @@ function MemoriesSection({ event }: { event: MemoraEvent }) {
     if (!m) return;
     updateEvent(event.id, { memories: event.memories.filter((x) => x.id !== id) });
     showToast({
-      message: `Borraste el recuerdo de ${m.year}`,
-      actionLabel: 'Deshacer',
+      message: s.memoryDeleted(m.year),
+      actionLabel: strings().common.undo,
       onAction: () => restoreItem(event.id, 'memories', m),
       onExpire: () => deletePhoto(m.photoUri),
     });
@@ -208,20 +213,18 @@ function MemoriesSection({ event }: { event: MemoraEvent }) {
 
   return (
     <Section
-      title="Recuerdos"
+      title={s.memories}
       action={
         <Pressable onPress={() => setOpen(true)}>
           <T variant="small" color={c.accent} style={{ fontFamily: Fonts.bold }}>
-            + Agregar
+            {strings().common.addMore}
           </T>
         </Pressable>
       }>
       {list.length === 0 ? (
         <Card>
           <T variant="small" muted>
-            {getKind(event.kind).person
-              ? 'Guardá cómo lo festejaron cada año: una foto, una anécdota, quiénes estuvieron.'
-              : 'Anotá lo que pasó cada año, con una foto si querés.'}
+            {getKind(event.kind).person ? s.memoriesHintPerson : s.memoriesHint}
           </T>
         </Card>
       ) : (
@@ -238,16 +241,16 @@ function MemoriesSection({ event }: { event: MemoraEvent }) {
             </Pressable>
           ))}
           <T variant="small" muted style={{ textAlign: 'center' }}>
-            Mantené apretado un recuerdo para borrarlo.
+            {s.memoryDeleteHint}
           </T>
         </View>
       )}
 
-      <Sheet visible={open} onClose={cancel} title="Nuevo recuerdo">
-        <Field label="Año" keyboardType="number-pad" maxLength={4} value={year} onChangeText={(v) => setYear(digitsOnly(v))} />
+      <Sheet visible={open} onClose={cancel} title={s.newMemory}>
+        <Field label={s.memoryYear} keyboardType="number-pad" maxLength={4} value={year} onChangeText={(v) => setYear(digitsOnly(v))} />
         <Field
-          label="¿Qué pasó?"
-          placeholder="Cena en casa, sorpresa con amigos…"
+          label={s.memoryWhat}
+          placeholder={s.memoryWhatPlaceholder}
           value={text}
           onChangeText={setText}
           maxLength={LIMITS.memory}
@@ -255,7 +258,7 @@ function MemoriesSection({ event }: { event: MemoraEvent }) {
         />
         {photo ? <Image source={{ uri: photo }} style={{ height: 160, borderRadius: Radius.md }} contentFit="cover" /> : null}
         <Button
-          label={photo ? 'Cambiar foto' : 'Agregar foto'}
+          label={photo ? s.changePhoto : s.addPhoto}
           icon="image"
           variant="secondary"
           onPress={async () => {
@@ -265,7 +268,7 @@ function MemoriesSection({ event }: { event: MemoraEvent }) {
             setPhoto(uri);
           }}
         />
-        <Button label="Guardar recuerdo" icon="check" onPress={save} />
+        <Button label={s.saveMemory} icon="check" onPress={save} />
       </Sheet>
     </Section>
   );
@@ -281,12 +284,13 @@ export default function EventDetailScreen() {
   const toggleGreeted = useStore((s) => s.toggleGreeted);
   const [channel, setChannel] = useState<GreetChannel | null>(null);
   const [cardOpen, setCardOpen] = useState(false);
+  const s = strings().event;
 
   if (!event) {
     return (
       <Screen>
         <Header />
-        <EmptyState icon="question" title="No encontramos esta fecha" text="Puede que se haya borrado." />
+        <EmptyState icon="question" title={s.notFound} text={s.notFoundText} />
       </Screen>
     );
   }
@@ -302,10 +306,10 @@ export default function EventDetailScreen() {
 
   const startGreet = (ch: GreetChannel) => {
     if (ch === 'call') {
-      if (!event.phone) return Alert.alert('Sin teléfono', 'Agregá un teléfono editando esta fecha.');
+      if (!event.phone) return Alert.alert(s.noPhone, s.noPhoneText);
       return greet('call', event.phone, '');
     }
-    if (ch === 'sms' && !event.phone) return Alert.alert('Sin teléfono', 'Agregá un teléfono editando esta fecha.');
+    if (ch === 'sms' && !event.phone) return Alert.alert(s.noPhone, s.noPhoneText);
     setChannel(ch);
   };
 
@@ -327,7 +331,7 @@ export default function EventDetailScreen() {
           right={
             <IconButton
               icon="edit-2"
-              label="Editar"
+              label={strings().common.edit}
               onPress={() => router.push({ pathname: '/event/edit/[id]', params: { id: event.id } })}
             />
           }
@@ -358,18 +362,18 @@ export default function EventDetailScreen() {
             <>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: Space.sm }}>
                 {isToday ? <Icon name="party" size={24} /> : null}
-                <T variant="title">{isToday ? '¡Es hoy!' : countdownLabel(up.days)}</T>
+                <T variant="title">{isToday ? s.isToday : countdownLabel(up.days)}</T>
               </View>
               {years && kind.yearsLabel ? (
                 <T muted style={{ textAlign: 'center' }}>
                   {kind.yearsLabel(years)}
-                  {isMilestone(years) ? ' · ¡número redondo!' : ''}
+                  {isMilestone(years) ? ` · ${strings().common.milestone}` : ''}
                 </T>
               ) : null}
             </>
           ) : (
             <T muted style={{ textAlign: 'center' }}>
-              Esta fecha ya pasó.
+              {s.past}
             </T>
           )}
           {zodiac ? (
@@ -383,12 +387,12 @@ export default function EventDetailScreen() {
         </Card>
 
         {kind.person ? (
-          <Section title="Saludar">
+          <Section title={s.greetSection}>
             <View style={{ flexDirection: 'row', gap: Space.sm }}>
-              <GreetButton icon="message-circle" label="WhatsApp" onPress={() => startGreet('whatsapp')} />
-              <GreetButton icon="message-square" label="SMS" onPress={() => startGreet('sms')} />
-              <GreetButton icon="phone" label="Llamar" onPress={() => startGreet('call')} />
-              <GreetButton icon="image" label="Tarjeta" onPress={() => setCardOpen(true)} />
+              <GreetButton icon="message-circle" label={s.whatsapp} onPress={() => startGreet('whatsapp')} />
+              <GreetButton icon="message-square" label={s.sms} onPress={() => startGreet('sms')} />
+              <GreetButton icon="phone" label={s.call} onPress={() => startGreet('call')} />
+              <GreetButton icon="image" label={s.card} onPress={() => setCardOpen(true)} />
             </View>
             {isToday ? (
               <Pressable
@@ -398,14 +402,14 @@ export default function EventDetailScreen() {
                 }}
                 style={[styles.greetedRow, { backgroundColor: greeted ? c.successSoft : c.surface, borderColor: c.border }]}>
                 <Feather name={greeted ? 'check-circle' : 'circle'} size={20} color={greeted ? c.success : c.textMuted} />
-                <T style={{ fontFamily: Fonts.medium }}>{greeted ? '¡Ya saludaste!' : '¿Ya saludaste? Marcalo acá'}</T>
+                <T style={{ fontFamily: Fonts.medium }}>{greeted ? s.greetedYes : s.greetedAsk}</T>
               </Pressable>
             ) : null}
           </Section>
         ) : null}
 
         {kind.person && event.likes ? (
-          <Section title="Gustos">
+          <Section title={s.likes}>
             <Card>
               <T>{event.likes}</T>
             </Card>
@@ -419,25 +423,25 @@ export default function EventDetailScreen() {
         {event.recurrence !== 'once' ? <MemoriesSection event={event} /> : null}
 
         {event.notes ? (
-          <Section title="Notas">
+          <Section title={s.notes}>
             <Card>
               <T>{event.notes}</T>
             </Card>
           </Section>
         ) : null}
 
-        <Section title="Avisos">
+        <Section title={s.reminders}>
           <Card>
             <T variant="small" muted>
               {settings.notificationsEnabled
-                ? `${offsetsSummary(effectiveOffsets(event, tags, settings))} · a las ${String(settings.notifyHour).padStart(2, '0')}:00`
-                : 'Los avisos están desactivados en Ajustes.'}
+                ? s.remindersAt(offsetsSummary(effectiveOffsets(event, tags, settings)), `${String(settings.notifyHour).padStart(2, '0')}:00`)
+                : s.remindersOff}
             </T>
           </Card>
         </Section>
       </Screen>
 
-      <Sheet visible={channel !== null} onClose={() => setChannel(null)} title="Elegí un mensaje">
+      <Sheet visible={channel !== null} onClose={() => setChannel(null)} title={s.chooseMessage}>
         {templates.map((t) => (
           <Pressable
             key={t.id}
@@ -446,7 +450,7 @@ export default function EventDetailScreen() {
             <T>{fillTemplate(t.text, event, years)}</T>
           </Pressable>
         ))}
-        <Button label="Escribir mi propio mensaje" variant="secondary" onPress={() => sendWith('')} />
+        <Button label={s.ownMessage} variant="secondary" onPress={() => sendWith('')} />
       </Sheet>
 
       {kind.person ? (

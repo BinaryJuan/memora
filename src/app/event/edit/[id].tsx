@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { EventForm } from '@/components/event-form';
 import { showToast } from '@/components/toast';
 import { Button, EmptyState, Header, Screen } from '@/components/ui';
+import { strings } from '@/i18n/core';
 import { deletePhoto } from '@/lib/media';
 import { useStore } from '@/store/store';
 import { Space } from '@/theme/theme';
@@ -16,7 +17,7 @@ export default function EditEventScreen() {
     return (
       <Screen>
         <Header />
-        <EmptyState icon="question" title="No encontramos esta fecha" />
+        <EmptyState icon="question" title={strings().event.notFound} />
       </Screen>
     );
   }
@@ -27,8 +28,8 @@ export default function EditEventScreen() {
     router.dismissTo('/');
     deleteEvent(removed.id);
     showToast({
-      message: `Borraste «${removed.title}»`,
-      actionLabel: 'Deshacer',
+      message: strings().event.deleted(removed.title),
+      actionLabel: strings().common.undo,
       onAction: () => restoreEvent(removed),
       onExpire: () => removed.memories.forEach((m) => deletePhoto(m.photoUri)),
     });
@@ -36,9 +37,9 @@ export default function EditEventScreen() {
 
   return (
     <Screen>
-      <Header title="Editar" />
+      <Header title={strings().event.editTitle} />
       <EventForm initial={event} onSaved={() => router.back()} />
-      <Button label="Borrar fecha" icon="trash-2" variant="danger" onPress={remove} style={{ marginTop: Space.md }} />
+      <Button label={strings().event.deleteEvent} icon="trash-2" variant="danger" onPress={remove} style={{ marginTop: Space.md }} />
     </Screen>
   );
 }

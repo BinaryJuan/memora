@@ -3,6 +3,7 @@ import * as ScreenCapture from 'expo-screen-capture';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AppState, Platform, StyleSheet, View } from 'react-native';
 
+import { strings } from '@/i18n/core';
 import { useStore } from '@/store/store';
 import { Space, useTheme } from '@/theme/theme';
 import { IconBadge } from './icon';
@@ -14,7 +15,7 @@ const GRACE_MS = 10_000;
 export async function authenticate(reason: string): Promise<boolean> {
   if (Platform.OS === 'web') return true;
   try {
-    const res = await LocalAuthentication.authenticateAsync({ promptMessage: reason, cancelLabel: 'Cancelar' });
+    const res = await LocalAuthentication.authenticateAsync({ promptMessage: reason, cancelLabel: strings().common.cancel });
     return res.success;
   } catch {
     return false;
@@ -56,7 +57,7 @@ export function LockGate({ children }: { children: ReactNode }) {
         setLocked(false);
         return;
       }
-      if (await authenticate('Desbloquear Memora')) setLocked(false);
+      if (await authenticate(strings().lock.reason)) setLocked(false);
     } finally {
       busy.current = false;
     }
@@ -108,11 +109,11 @@ export function LockGate({ children }: { children: ReactNode }) {
       {showLock ? (
         <View style={[StyleSheet.absoluteFill, styles.lock, { backgroundColor: c.bg }]}>
           <IconBadge name="lock" size={88} style={{ marginBottom: Space.md }} />
-          <T variant="display">Memora</T>
+          <T variant="display">memora</T>
           <T muted style={{ textAlign: 'center' }}>
-            Tus fechas están protegidas.
+            {strings().lock.protected}
           </T>
-          <Button label="Desbloquear" icon="unlock" onPress={unlock} style={{ marginTop: Space.lg }} />
+          <Button label={strings().lock.unlock} icon="unlock" onPress={unlock} style={{ marginTop: Space.lg }} />
         </View>
       ) : null}
     </View>

@@ -4,6 +4,7 @@ import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { Icon, TAG_ICONS } from '@/components/icon';
 import { OffsetPicker } from '@/components/offset-picker';
 import { Button, Card, Divider, Field, Header, Row, Screen, Sheet, SwitchRow, T } from '@/components/ui';
+import { strings } from '@/i18n/core';
 import { offsetsSummary, TAG_COLORS } from '@/lib/kinds';
 import type { Tag } from '@/lib/types';
 import { LIMITS } from '@/lib/validation';
@@ -19,6 +20,7 @@ export default function TagsScreen() {
   const saveTag = useStore((s) => s.saveTag);
   const deleteTag = useStore((s) => s.deleteTag);
   const [editing, setEditing] = useState<Tag | null>(null);
+  const s = strings().tags;
 
   const startNew = () =>
     setEditing({ id: newId(), name: '', icon: 'star', color: TAG_COLORS[tags.length % TAG_COLORS.length] });
@@ -26,11 +28,10 @@ export default function TagsScreen() {
   const save = () => {
     if (!editing) return;
     const name = editing.name.trim();
-    if (!name) return Alert.alert('Falta el nombre', 'Poné un nombre a la etiqueta.');
+    if (!name) return Alert.alert(s.missingName, s.missingNameText);
     if (tags.some((t) => t.id !== editing.id && t.name.toLowerCase() === name.toLowerCase()))
-      return Alert.alert('Ya existe', `Ya tenés una etiqueta que se llama «${name}».`);
-    if (!tags.some((t) => t.id === editing.id) && tags.length >= LIMITS.tags)
-      return Alert.alert('Demasiadas etiquetas', 'Borrá alguna antes de crear otra.');
+      return Alert.alert(s.exists, s.existsText(name));
+    if (!tags.some((t) => t.id === editing.id) && tags.length >= LIMITS.tags) return Alert.alert(s.tooMany, s.tooManyText);
     saveTag({ ...editing, name });
     setEditing(null);
   };
@@ -39,12 +40,12 @@ export default function TagsScreen() {
     if (!editing) return;
     const count = events.filter((e) => e.tagIds.includes(editing.id)).length;
     Alert.alert(
-      'Borrar etiqueta',
-      count > 0 ? `Se va a quitar de ${count} ${count === 1 ? 'fecha' : 'fechas'}. Las fechas no se borran.` : '¿Seguro?',
+      s.deleteTag,
+      s.deleteText(count),
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: strings().common.cancel, style: 'cancel' },
         {
-          text: 'Borrar',
+          text: strings().common.delete,
           style: 'destructive',
           onPress: () => {
             deleteTag(editing.id);
@@ -59,9 +60,9 @@ export default function TagsScreen() {
 
   return (
     <Screen>
-      <Header title="Etiquetas" />
+      <Header title={s.title} />
       <T muted style={{ marginBottom: Space.lg }}>
-        Agrupá a las personas por tipo. Cada etiqueta puede tener sus propios avisos.
+        {s.intro}
       </T>
       <Card style={{ paddingVertical: Space.xs }}>
         {tags.map((t, i) => {
@@ -72,29 +73,29 @@ export default function TagsScreen() {
               <Row
                 badge={{ icon: t.icon, color: t.color }}
                 title={t.name}
-                subtitle={`${count} ${count === 1 ? 'fecha' : 'fechas'}${t.reminderOffsets ? ' · avisos propios' : ''}`}
+                subtitle={`${strings().common.dates(count)}${t.reminderOffsets ? s.customReminders : ''}`}
                 onPress={() => setEditing(t)}
                 right={<View style={[styles.swatch, { backgroundColor: t.color }]} />}
               />
             </View>
           );
         })}
-        {tags.length === 0 ? <T muted style={{ paddingVertical: Space.md }}>No hay etiquetas.</T> : null}
+        {tags.length === 0 ? <T muted style={{ paddingVertical: Space.md }}>{s.none}</T> : null}
       </Card>
-      <Button label="Nueva etiqueta" icon="plus" variant="secondary" onPress={startNew} style={{ marginTop: Space.lg }} />
+      <Button label={s.newTag} icon="plus" variant="secondary" onPress={startNew} style={{ marginTop: Space.lg }} />
 
-      <Sheet visible={editing !== null} onClose={() => setEditing(null)} title={isExisting ? 'Editar etiqueta' : 'Nueva etiqueta'}>
+      <Sheet visible={editing !== null} onClose={() => setEditing(null)} title={isExisting ? s.editTag : s.newTag}>
         {editing ? (
           <>
             <Field
-              label="Nombre"
-              placeholder="Ej: Facultad"
+              label={s.name}
+              placeholder={s.namePlaceholder}
               maxLength={LIMITS.tagName}
               value={editing.name}
               onChangeText={(name) => setEditing({ ...editing, name })}
               autoFocus={!isExisting}
             />
-            <T variant="label">Ícono</T>
+            <T variant="label">{s.icon}</T>
             <View style={styles.wrap}>
               {TAG_ICONS.map((e) => (
                 <Pressable
@@ -109,12 +110,12 @@ export default function TagsScreen() {
                 </Pressable>
               ))}
             </View>
-            <T variant="label">Color</T>
+            <T variant="label">{s.color}</T>
             <View style={styles.wrap}>
               {TAG_COLORS.map((col) => (
                 <Pressable
                   key={col}
-                  accessibilityLabel={`Color ${col}`}
+                  accessibilityLabel={s.colorA11y(col)}
                   onPress={() => setEditing({ ...editing, color: col })}
                   style={[styles.color, { backgroundColor: col, borderColor: editing.color === col ? c.text : 'transparent' }]}
                 />
@@ -123,8 +124,8 @@ export default function TagsScreen() {
             <Card style={{ paddingVertical: Space.xs }}>
               <SwitchRow
                 icon="bell"
-                title="Avisos propios"
-                subtitle={editing.reminderOffsets ? 'Para todas las fechas con esta etiqueta' : `Usa los de Ajustes: ${offsetsSummary(settings.defaultOffsets)}`}
+                title={s.ownReminders}
+                subtitle={editing.reminderOffsets ? s.ownRemindersOn : s.ownRemindersOff(offsetsSummary(settings.defaultOffsets))}
                 value={!!editing.reminderOffsets}
                 onChange={(on) => setEditing({ ...editing, reminderOffsets: on ? settings.defaultOffsets : undefined })}
               />
@@ -137,8 +138,8 @@ export default function TagsScreen() {
                 </View>
               ) : null}
             </Card>
-            <Button label="Guardar" icon="check" onPress={save} />
-            {isExisting ? <Button label="Borrar etiqueta" icon="trash-2" variant="danger" onPress={remove} /> : null}
+            <Button label={strings().common.save} icon="check" onPress={save} />
+            {isExisting ? <Button label={s.deleteTag} icon="trash-2" variant="danger" onPress={remove} /> : null}
           </>
         ) : null}
       </Sheet>

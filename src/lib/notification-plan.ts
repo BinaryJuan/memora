@@ -1,3 +1,5 @@
+import { strings } from '@/i18n/core';
+
 import { addDays, dateKey, formatShortDate, nextOccurrences, startOfDay, yearsAt } from './dates';
 import { effectiveOffsets } from './events';
 import { getKind } from './kinds';
@@ -23,6 +25,7 @@ const MAX_CATCH_UP = 10;
 
 function planForEvent(e: MemoraEvent, offsets: number[], hour: number, now: Date): Planned[] {
   const kind = getKind(e.kind);
+  const n = strings().notif;
   const count = e.recurrence === 'monthly' ? 3 : 2;
   const today = dateKey(now);
   const out: Planned[] = [];
@@ -37,16 +40,16 @@ function planForEvent(e: MemoraEvent, offsets: number[], hour: number, now: Date
       if (date <= now && day !== today) continue;
       let title: string;
       if (offset === 0) {
-        title = kind.person ? `Hoy es ${kind.phrase(e.title)} ${kind.emoji}` : `${kind.emoji} Hoy: ${e.title}`;
+        title = kind.person ? n.todayPerson(kind.phrase(e.title), kind.emoji) : n.today(e.title, kind.emoji);
       } else if (offset === 1) {
-        title = `Mañana: ${kind.phrase(e.title)}`;
+        title = n.tomorrow(kind.phrase(e.title));
       } else {
-        title = `En ${offset} días: ${kind.phrase(e.title)}`;
+        title = n.inDays(offset, kind.phrase(e.title));
       }
       const parts: string[] = [];
       if (yearsText) parts.push(yearsText);
-      if (offset === 0 && kind.person) parts.push('¡No te olvides de saludar!');
-      if (offset > 0 && e.giftIdeas.length > 0 && kind.person) parts.push('Tenés ideas de regalo anotadas 🎁');
+      if (offset === 0 && kind.person) parts.push(n.dontForget);
+      if (offset > 0 && e.giftIdeas.length > 0 && kind.person) parts.push(n.giftIdeas);
       if (parts.length === 0) parts.push(kind.label);
       out.push({
         date,
@@ -81,7 +84,7 @@ function planWeeklySummaries(events: MemoraEvent[], hour: number, now: Date): Pl
     if (date <= now) continue;
     out.push({
       date,
-      title: items.length === 1 ? 'Esta semana tenés 1 fecha' : `Esta semana tenés ${items.length} fechas`,
+      title: strings().notif.weekly(items.length),
       body: items.map((i) => `${i.title} (${formatShortDate(i.date)})`).join(', '),
     });
   }

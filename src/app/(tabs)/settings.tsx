@@ -13,7 +13,8 @@ import {
   openExactAlarmSettings,
   sendTestNotification,
 } from '@/lib/notifications';
-import type { BackupData, ThemeMode } from '@/lib/types';
+import { LANG_NAMES, LANGS, strings } from '@/i18n/core';
+import type { BackupData, LanguagePref, ThemeMode } from '@/lib/types';
 import { BackupError } from '@/lib/validation';
 import { useStore } from '@/store/store';
 import { Fonts, Space } from '@/theme/theme';
@@ -28,10 +29,11 @@ export default function SettingsScreen() {
   // Se vuelve a mirar al entrar a esta pestaña: el permiso se puede cambiar desde los ajustes del teléfono.
   const [exactMissing, setExactMissing] = useState(exactAlarmsMissing);
   useFocusEffect(useCallback(() => setExactMissing(exactAlarmsMissing()), []));
+  const s = strings().settings;
 
   const toggleNotifications = async (on: boolean) => {
     if (on && !(await ensurePermission())) {
-      Alert.alert('Permiso necesario', 'Activá las notificaciones de Memora en los ajustes del teléfono.');
+      Alert.alert(s.permissionNeeded, s.permissionNeededText);
       return;
     }
     update({ notificationsEnabled: on });
@@ -42,33 +44,33 @@ export default function SettingsScreen() {
       // Alcanza con cualquier bloqueo del teléfono (huella, PIN o patrón).
       const ok = (await LocalAuthentication.getEnrolledLevelAsync()) !== LocalAuthentication.SecurityLevel.NONE;
       if (!ok) {
-        Alert.alert('No disponible', 'Configurá una huella o un PIN en el teléfono para usar el bloqueo.');
+        Alert.alert(strings().common.notAvailable, s.lockUnavailable);
         return;
       }
     }
-    if (await authenticate(on ? 'Confirmá para activar el bloqueo' : 'Confirmá para quitar el bloqueo')) {
+    if (await authenticate(on ? s.lockConfirmOn : s.lockConfirmOff)) {
       update({ lockEnabled: on });
     }
   };
 
   const doExport = async () => {
-    const { events, tags, templates, settings } = useStore.getState();
+    const { events, tags, templates, notes, settings } = useStore.getState();
     try {
-      await exportBackup({ events, tags, templates, settings });
+      await exportBackup({ events, tags, templates, notes, settings });
     } catch {
-      Alert.alert('Ups', 'No se pudo crear el respaldo.');
+      Alert.alert(strings().common.oops, s.exportFailed);
     }
   };
 
   const replaceAll = (data: BackupData) => {
-    const current = useStore.getState().events;
+    const { events: current, notes } = useStore.getState();
     Alert.alert(
-      '¿Reemplazar todo?',
-      `Se van a borrar tus ${current.length} fechas actuales y quedan solo las del respaldo. No se puede deshacer.`,
+      s.replaceTitle,
+      s.replaceText(current.length, notes.length),
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: strings().common.cancel, style: 'cancel' },
         {
-          text: 'Reemplazar',
+          text: s.replace,
           style: 'destructive',
           onPress: () => {
             // Las fotos de recuerdos que ya no usa nadie se borran del teléfono.
@@ -86,26 +88,26 @@ export default function SettingsScreen() {
     try {
       data = await pickBackup(useStore.getState().settings);
     } catch (e) {
-      Alert.alert('No se pudo importar', e instanceof BackupError ? e.message : 'No pudimos leer el archivo.');
+      Alert.alert(s.importFailed, e instanceof BackupError ? e.message : s.readFailed);
       return;
     }
     if (!data) return;
-    if (data.events.length === 0) {
-      Alert.alert('Respaldo vacío', 'El archivo no tiene fechas para importar.');
+    const noteCount = data.notes?.length ?? 0;
+    if (data.events.length === 0 && noteCount === 0) {
+      Alert.alert(s.emptyBackup, s.emptyBackupText);
       return;
     }
     const backup = data;
-    const n = backup.events.length;
-    Alert.alert('Importar respaldo', `El archivo tiene ${n} ${n === 1 ? 'fecha' : 'fechas'}. ¿Qué querés hacer?`, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sumar a las mías', onPress: () => useStore.getState().importBackup(backup, 'merge') },
-      { text: 'Reemplazar todo', style: 'destructive', onPress: () => replaceAll(backup) },
+    Alert.alert(s.importTitle, s.importText(backup.events.length, noteCount), [
+      { text: strings().common.cancel, style: 'cancel' },
+      { text: s.merge, onPress: () => useStore.getState().importBackup(backup, 'merge') },
+      { text: s.replaceAll, style: 'destructive', onPress: () => replaceAll(backup) },
     ]);
   };
 
   const testNotification = async () => {
     if (!(await ensurePermission())) {
-      Alert.alert('Permiso necesario', 'Activá las notificaciones de Memora en los ajustes del teléfono.');
+      Alert.alert(s.permissionNeeded, s.permissionNeededText);
       return;
     }
     await sendTestNotification();
@@ -119,25 +121,36 @@ export default function SettingsScreen() {
 
   return (
     <Screen>
-      <PageTitle title="Ajustes" />
+      <PageTitle title={s.title} />
 
-      <Section title="Apariencia">
+      <Section title={s.appearance}>
         <Segmented<ThemeMode>
           options={[
-            { id: 'system', label: 'Automático' },
-            { id: 'light', label: 'Claro' },
-            { id: 'dark', label: 'Oscuro' },
+            { id: 'system', label: s.themeSystem },
+            { id: 'light', label: s.themeLight },
+            { id: 'dark', label: s.themeDark },
           ]}
           value={settings.theme}
           onChange={(theme) => update({ theme })}
         />
       </Section>
 
-      <Section title="Avisos">
+      <Section title={s.language}>
+        <Segmented<LanguagePref>
+          options={[
+            { id: 'system', label: s.languageSystem },
+            ...LANGS.map((id) => ({ id, label: LANG_NAMES[id] })),
+          ]}
+          value={settings.language}
+          onChange={(language) => update({ language })}
+        />
+      </Section>
+
+      <Section title={s.notifications}>
         <Card style={{ paddingVertical: Space.xs }}>
           <SwitchRow
             icon="bell"
-            title="Avisarme de las fechas"
+            title={s.notifyMe}
             value={settings.notificationsEnabled}
             onChange={toggleNotifications}
           />
@@ -146,20 +159,20 @@ export default function SettingsScreen() {
               <Divider />
               <Row
                 icon="clock"
-                title="Hora de los avisos"
+                title={s.notifyHour}
                 subtitle={formatHour(settings.notifyHour)}
                 right={
                   <View style={{ flexDirection: 'row', gap: Space.xs }}>
                     <IconButton
                       icon="minus"
                       filled
-                      label="Más temprano"
+                      label={s.earlier}
                       onPress={() => update({ notifyHour: (settings.notifyHour + 23) % 24 })}
                     />
                     <IconButton
                       icon="plus"
                       filled
-                      label="Más tarde"
+                      label={s.laterHour}
                       onPress={() => update({ notifyHour: (settings.notifyHour + 1) % 24 })}
                     />
                   </View>
@@ -167,24 +180,24 @@ export default function SettingsScreen() {
               />
               <Divider />
               <View style={{ paddingVertical: Space.md, gap: Space.sm }}>
-                <T style={{ fontFamily: Fonts.medium }}>Cuándo avisar</T>
+                <T style={{ fontFamily: Fonts.medium }}>{s.whenToNotify}</T>
                 <T variant="small" muted>
-                  Se usa para todas las fechas, salvo las que tengan avisos propios o por etiqueta.
+                  {s.whenToNotifyHint}
                 </T>
                 <OffsetPicker value={settings.defaultOffsets} onChange={(defaultOffsets) => update({ defaultOffsets })} />
               </View>
               <Divider />
               <SwitchRow
                 icon="inbox"
-                title="Resumen semanal"
-                subtitle="Los lunes, lo que viene en la semana"
+                title={s.weekly}
+                subtitle={s.weeklyHint}
                 value={settings.weeklySummary}
                 onChange={(weeklySummary) => update({ weeklySummary })}
               />
               {Platform.OS !== 'web' ? (
                 <>
                   <Divider />
-                  <Row icon="send" title="Probar un aviso" subtitle="Llega en 3 segundos" onPress={testNotification} />
+                  <Row icon="send" title={s.test} subtitle={s.testHint} onPress={testNotification} />
                 </>
               ) : null}
               {exactMissing ? (
@@ -192,59 +205,71 @@ export default function SettingsScreen() {
                   <Divider />
                   <Row
                     icon="watch"
-                    title="Avisos a la hora justa"
-                    subtitle="Android puede atrasarlos. Tocá para permitir «Alarmas y recordatorios»"
+                    title={s.exact}
+                    subtitle={s.exactHint}
                     onPress={fixTiming}
                   />
                 </>
               ) : null}
             </>
           ) : null}
+          {Platform.OS !== 'web' ? (
+            <>
+              <Divider />
+              <SwitchRow
+                icon="music"
+                title={s.sound}
+                subtitle={s.soundHint}
+                value={settings.birthdaySound}
+                onChange={(birthdaySound) => update({ birthdaySound })}
+              />
+            </>
+          ) : null}
         </Card>
       </Section>
 
-      <Section title="Organizar">
+      <Section title={s.organize}>
         <Card style={{ paddingVertical: Space.xs }}>
-          <Row icon="tag" title="Etiquetas" subtitle="Familia, amigos, trabajo…" onPress={() => router.push('/tags')} />
+          <Row icon="tag" title={s.tags} subtitle={s.tagsHint} onPress={() => router.push('/tags')} />
           <Divider />
           <Row
             icon="message-square"
-            title="Mensajes de saludo"
-            subtitle="Plantillas para saludar rápido"
+            title={s.templates}
+            subtitle={s.templatesHint}
             onPress={() => router.push('/templates')}
           />
           <Divider />
-          <Row icon="bar-chart-2" title="Estadísticas" onPress={() => router.push('/stats')} />
+          <Row icon="bar-chart-2" title={s.stats} onPress={() => router.push('/stats')} />
         </Card>
       </Section>
 
-      <Section title="Tus datos">
+      <Section title={s.data}>
         <Card style={{ paddingVertical: Space.xs }}>
           <Row
             icon="users"
-            title="Importar desde contactos"
-            subtitle="Cumpleaños y aniversarios guardados"
+            title={s.importContacts}
+            subtitle={s.importContactsHint}
             onPress={() => router.push('/import-contacts')}
           />
           <Divider />
           <Row
             icon="upload"
-            title="Exportar respaldo"
-            subtitle="Podés guardarlo en Google Drive"
+            title={s.exportBackup}
+            subtitle={s.exportBackupHint}
             onPress={doExport}
           />
           <Divider />
-          <Row icon="download" title="Importar respaldo" onPress={doImport} />
+          <Row icon="download" title={s.importBackup} onPress={doImport} />
         </Card>
       </Section>
 
       {Platform.OS !== 'web' ? (
-        <Section title="Privacidad">
+        <Section title={s.privacy}>
           <Card style={{ paddingVertical: Space.xs }}>
             <SwitchRow
               icon="lock"
-              title="Bloquear con huella o PIN"
-              subtitle="Se pide al abrir la app"
+              title={s.lock}
+              subtitle={s.lockHint}
               value={settings.lockEnabled}
               onChange={toggleLock}
             />
@@ -253,7 +278,7 @@ export default function SettingsScreen() {
       ) : null}
 
       <T variant="small" muted style={{ textAlign: 'center', marginTop: Space.xxl }}>
-        Memora · versión 1.0{'\n'}Tus datos se guardan solo en este teléfono.
+        {s.footer}
       </T>
     </Screen>
   );

@@ -190,6 +190,12 @@ export const ICONS = {
     ['r', 7, 3, 10, 18, 2.5, 't'],
     ['p', 'M10.5 18h3'],
   ],
+  // Hoja con la esquina doblada y renglones.
+  note: [
+    ['p', 'M6.5 3.5h8l4 4v11a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2z', 't'],
+    ['p', 'M14.5 3.5v4h4'],
+    ['p', 'M8.5 12h7M8.5 15.5h5'],
+  ],
 } satisfies Record<string, Shape[]>;
 
 export type IconKey = keyof typeof ICONS;

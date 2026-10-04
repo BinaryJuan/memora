@@ -3,9 +3,10 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { capitalize, clampDate, isValidDate, MONTHS, startOfDay } from '@/lib/dates';
+import { strings } from '@/i18n/core';
+import { capitalize, clampDate, isValidDate, monthName, monthNames, startOfDay } from '@/lib/dates';
 import { askExactAlarmsOnce, ensurePermission } from '@/lib/notifications';
-import { getKind, KINDS, offsetsSummary, RECURRENCES } from '@/lib/kinds';
+import { getKind, kinds, offsetsSummary, recurrences } from '@/lib/kinds';
 import type { KindId, MemoraEvent, Recurrence } from '@/lib/types';
 import { digitsOnly, isValidPhone, LIMITS, MAX_YEAR, MIN_YEAR } from '@/lib/validation';
 import { useStore, type NewEvent } from '@/store/store';
@@ -45,6 +46,7 @@ export function EventForm({ initial, defaults, onSaved }: Props) {
   const [iconSheet, setIconSheet] = useState(false);
 
   const info = getKind(kind);
+  const f = strings().form;
 
   const changeKind = (k: KindId) => {
     setKind(k);
@@ -56,16 +58,13 @@ export function EventForm({ initial, defaults, onSaved }: Props) {
     const d = parseInt(day, 10);
     let y = recurrence !== 'monthly' && year.trim() ? parseInt(year, 10) : undefined;
     const m = recurrence === 'monthly' ? (month ?? 1) : month;
-    if (!title.trim()) return Alert.alert('Falta el nombre', info.titleLabel);
+    if (!title.trim()) return Alert.alert(f.missingName, info.titleLabel);
     if (!day.trim() || (recurrence !== 'monthly' && !m))
-      return Alert.alert('Falta la fecha', recurrence === 'monthly' ? 'Escribí qué día del mes es.' : 'Completá el día y el mes.');
+      return Alert.alert(f.missingDate, recurrence === 'monthly' ? f.missingDayOfMonth : f.missingDayMonth);
     if (!m) return;
-    if (y !== undefined && (Number.isNaN(y) || y < MIN_YEAR || y > MAX_YEAR))
-      return Alert.alert('Año inválido', 'Escribí el año con 4 cifras, o dejalo vacío.');
-    if (info.person && phone.trim() && !isValidPhone(phone.trim()))
-      return Alert.alert('Teléfono inválido', 'Escribí solo números, con el código de país. Ej: +54 9 11 1234 5678.');
-    if (recurrence === 'monthly' ? !(d >= 1 && d <= 31) : !isValidDate(d, m, y))
-      return Alert.alert('Fecha inválida', 'Revisá el día: no existe en ese mes.');
+    if (y !== undefined && (Number.isNaN(y) || y < MIN_YEAR || y > MAX_YEAR)) return Alert.alert(f.badYear, f.badYearText);
+    if (info.person && phone.trim() && !isValidPhone(phone.trim())) return Alert.alert(f.badPhone, f.badPhoneText);
+    if (recurrence === 'monthly' ? !(d >= 1 && d <= 31) : !isValidDate(d, m, y)) return Alert.alert(f.badDate, f.badDateText);
     // Una sola vez y sin año: la próxima vez que caiga esa fecha.
     if (recurrence === 'once' && !y) {
       const thisYear = new Date().getFullYear();
@@ -102,16 +101,16 @@ export function EventForm({ initial, defaults, onSaved }: Props) {
 
   return (
     <View>
-      <Section title="Tipo">
+      <Section title={f.type}>
         <ChipRow scroll>
-          {KINDS.map((k) => (
+          {kinds().map((k) => (
             <Chip key={k.id} label={k.label} icon={k.icon} selected={kind === k.id} onPress={() => changeKind(k.id)} />
           ))}
         </ChipRow>
       </Section>
 
       <View style={{ marginTop: Space.xl, flexDirection: 'row', gap: Space.lg, alignItems: 'flex-end' }}>
-        <Pressable onPress={() => setIconSheet(true)} accessibilityLabel="Elegir ícono">
+        <Pressable onPress={() => setIconSheet(true)} accessibilityLabel={f.chooseIcon}>
           <Avatar event={{ kind, title, tagIds }} icon={icon} size={72} />
           <View style={[styles.editBadge, { backgroundColor: c.surface, borderColor: c.border }]}>
             <Feather name="edit-2" size={12} color={c.text} />
@@ -130,13 +129,13 @@ export function EventForm({ initial, defaults, onSaved }: Props) {
         </View>
       </View>
 
-      <Section title="Fecha">
+      <Section title={f.date}>
         <View style={{ gap: Space.md }}>
-          <Segmented options={RECURRENCES} value={recurrence} onChange={setRecurrence} />
+          <Segmented options={recurrences()} value={recurrence} onChange={setRecurrence} />
           <View style={{ flexDirection: 'row', gap: Space.sm }}>
             <View style={{ width: 80 }}>
               <Field
-                label="Día"
+                label={f.day}
                 placeholder="15"
                 keyboardType="number-pad"
                 maxLength={2}
@@ -147,13 +146,13 @@ export function EventForm({ initial, defaults, onSaved }: Props) {
             {recurrence !== 'monthly' ? (
               <View style={{ flex: 1, gap: 6 }}>
                 <T variant="small" style={{ fontFamily: Fonts.medium }}>
-                  Mes
+                  {f.month}
                 </T>
                 <Pressable
                   onPress={() => setMonthSheet(true)}
                   style={[styles.select, { backgroundColor: c.surface, borderColor: c.border }]}>
                   <Text style={{ fontFamily: Fonts.regular, fontSize: 15, color: month ? c.text : c.textMuted }}>
-                    {month ? capitalize(MONTHS[month - 1]) : 'Elegir'}
+                    {month ? capitalize(monthName(month)) : f.choose}
                   </Text>
                   <Feather name="chevron-down" size={18} color={c.textMuted} />
                 </Pressable>
@@ -162,7 +161,7 @@ export function EventForm({ initial, defaults, onSaved }: Props) {
             {recurrence !== 'monthly' ? (
               <View style={{ width: 96 }}>
                 <Field
-                  label="Año (opcional)"
+                  label={f.yearOptional}
                   placeholder="1990"
                   keyboardType="number-pad"
                   maxLength={4}
@@ -174,7 +173,7 @@ export function EventForm({ initial, defaults, onSaved }: Props) {
           </View>
           {recurrence === 'yearly' && info.yearsLabel ? (
             <T variant="small" muted>
-              Si cargás el año, te mostramos cuántos {kind === 'birthday' ? 'cumple' : 'se cumplen'}.
+              {kind === 'birthday' ? f.yearsHintBirthday : f.yearsHint}
             </T>
           ) : null}
         </View>
@@ -182,11 +181,11 @@ export function EventForm({ initial, defaults, onSaved }: Props) {
 
       {tags.length > 0 ? (
         <Section
-          title="Etiquetas"
+          title={f.tags}
           action={
             <Pressable onPress={() => router.push('/tags')}>
               <T variant="small" color={c.accent} style={{ fontFamily: Fonts.bold }}>
-                Editar
+                {strings().common.edit}
               </T>
             </Pressable>
           }>
@@ -209,20 +208,20 @@ export function EventForm({ initial, defaults, onSaved }: Props) {
       ) : null}
 
       {info.person ? (
-        <Section title="Contacto y gustos">
+        <Section title={f.contact}>
           <View style={{ gap: Space.md }}>
             <Field
-              label="Teléfono"
-              placeholder="+54 9 11 1234 5678"
+              label={f.phone}
+              placeholder={f.phonePlaceholder}
               keyboardType="phone-pad"
               value={phone}
               onChangeText={setPhone}
               maxLength={LIMITS.phone}
-              hint="Con código de país, para poder saludar por WhatsApp."
+              hint={f.phoneHint}
             />
             <Field
-              label="Gustos"
-              placeholder="Le encanta el café, talle M, odia el chocolate…"
+              label={f.likes}
+              placeholder={f.likesPlaceholder}
               value={likes}
               onChangeText={setLikes}
               maxLength={LIMITS.likes}
@@ -232,9 +231,9 @@ export function EventForm({ initial, defaults, onSaved }: Props) {
         </Section>
       ) : null}
 
-      <Section title="Notas">
+      <Section title={f.notes}>
         <Field
-          placeholder="Cualquier cosa que quieras recordar"
+          placeholder={f.notesPlaceholder}
           value={notes}
           onChangeText={setNotes}
           maxLength={LIMITS.notes}
@@ -242,12 +241,12 @@ export function EventForm({ initial, defaults, onSaved }: Props) {
         />
       </Section>
 
-      <Section title="Avisos">
+      <Section title={f.reminders}>
         <Card style={{ paddingVertical: Space.xs }}>
           <SwitchRow
             icon="bell"
-            title="Avisos propios"
-            subtitle={customReminders ? 'Solo para esta fecha' : `Por defecto: ${offsetsSummary(settings.defaultOffsets)}`}
+            title={f.customReminders}
+            subtitle={customReminders ? f.customOnly : f.byDefault(offsetsSummary(settings.defaultOffsets))}
             value={customReminders}
             onChange={setCustomReminders}
           />
@@ -259,19 +258,19 @@ export function EventForm({ initial, defaults, onSaved }: Props) {
         </Card>
       </Section>
 
-      <Button label={initial ? 'Guardar cambios' : 'Guardar'} icon="check" onPress={save} style={{ marginTop: Space.xxl }} />
+      <Button label={initial ? f.saveChanges : strings().common.save} icon="check" onPress={save} style={{ marginTop: Space.xxl }} />
 
-      <Sheet visible={iconSheet} onClose={() => setIconSheet(false)} title="Ícono">
+      <Sheet visible={iconSheet} onClose={() => setIconSheet(false)} title={f.icon}>
         <View style={styles.iconGrid}>
           <Pressable
-            accessibilityLabel="Automático"
+            accessibilityLabel={f.auto}
             onPress={() => {
               tap();
               setIcon(undefined);
               setIconSheet(false);
             }}
             style={[styles.iconCell, blobRadius(56), { backgroundColor: !icon ? c.accentSoft : c.surface, borderColor: !icon ? c.accent : c.border }]}>
-            <Text style={{ fontFamily: Fonts.bold, fontSize: 13, color: c.text }}>{info.person ? 'Aa' : 'Auto'}</Text>
+            <Text style={{ fontFamily: Fonts.bold, fontSize: 13, color: c.text }}>{info.person ? f.autoShortPerson : f.autoShort}</Text>
           </Pressable>
           {EVENT_ICONS.map((k) => (
             <Pressable
@@ -288,13 +287,13 @@ export function EventForm({ initial, defaults, onSaved }: Props) {
           ))}
         </View>
         <T variant="small" muted>
-          {info.person ? '«Aa» muestra las iniciales.' : '«Auto» usa el ícono del tipo de fecha.'}
+          {info.person ? f.autoHintPerson : f.autoHint}
         </T>
       </Sheet>
 
-      <Sheet visible={monthSheet} onClose={() => setMonthSheet(false)} title="Mes">
+      <Sheet visible={monthSheet} onClose={() => setMonthSheet(false)} title={f.month}>
         <View style={styles.monthGrid}>
-          {MONTHS.map((name, i) => {
+          {monthNames().map((name, i) => {
             const active = month === i + 1;
             return (
               <Pressable

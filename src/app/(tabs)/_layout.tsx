@@ -4,6 +4,7 @@ import type { ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { IconName } from '@/components/ui';
+import { strings } from '@/i18n/core';
 import { useStore } from '@/store/store';
 import { Fonts, useTheme } from '@/theme/theme';
 
@@ -20,6 +21,7 @@ export default function TabsLayout() {
   const { bottom } = useSafeAreaInsets();
   const onboarded = useStore((s) => s.settings.onboarded);
   if (!onboarded) return <Redirect href="/welcome" />;
+  const t = strings().tabs;
   return (
     <Tabs
       screenOptions={{
@@ -36,10 +38,10 @@ export default function TabsLayout() {
         tabBarLabelStyle: { fontFamily: Fonts.medium, fontSize: 11 },
         sceneStyle: { backgroundColor: c.bg },
       }}>
-      <Tabs.Screen name="index" options={{ title: 'Inicio', tabBarIcon: icon('sun') }} />
-      <Tabs.Screen name="calendar" options={{ title: 'Calendario', tabBarIcon: icon('calendar') }} />
-      <Tabs.Screen name="all" options={{ title: 'Todas', tabBarIcon: icon('list') }} />
-      <Tabs.Screen name="settings" options={{ title: 'Ajustes', tabBarIcon: icon('settings') }} />
+      <Tabs.Screen name="index" options={{ title: t.home, tabBarIcon: icon('sun') }} />
+      <Tabs.Screen name="calendar" options={{ title: t.calendar, tabBarIcon: icon('calendar') }} />
+      <Tabs.Screen name="notes" options={{ title: t.notes, tabBarIcon: icon('file-text') }} />
+      <Tabs.Screen name="settings" options={{ title: t.settings, tabBarIcon: icon('settings') }} />
     </Tabs>
   );
 }

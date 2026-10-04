@@ -1,5 +1,6 @@
 import { FlexWidget, TextWidget } from 'react-native-android-widget';
 
+import { strings } from '@/i18n/core';
 import { formatDayMonth, shortCountdown } from '@/lib/dates';
 import type { Upcoming } from '@/lib/events';
 
@@ -60,6 +61,7 @@ function Row({ item }: { item: Upcoming }) {
 
 /** Widget "Próximas fechas": las que vienen, con cuánto falta. */
 export function NextDatesWidget({ items, rows, fallback }: { items: Upcoming[]; rows: number; fallback?: boolean }) {
+  const w = strings().widget;
   return (
     <FlexWidget
       clickAction="OPEN_APP"
@@ -72,15 +74,15 @@ export function NextDatesWidget({ items, rows, fallback }: { items: Upcoming[]; 
         flexDirection: 'column',
         flexGap: 6,
       }}>
-      <TextWidget text="PRÓXIMAS FECHAS" style={{ fontSize: 11, fontFamily: BOLD, color: C.muted, letterSpacing: 0.08 }} />
+      <TextWidget text={w.heading} style={{ fontSize: 11, fontFamily: BOLD, color: C.muted, letterSpacing: 0.08 }} />
       {items.length === 0 ? (
         <FlexWidget style={{ flex: 1, justifyContent: 'center' }}>
           <TextWidget
-            text={fallback ? 'Tus fechas, en Memora' : 'Todavía no anotaste nada'}
+            text={fallback ? w.fallbackTitle : w.emptyTitle}
             style={{ fontSize: 15, fontFamily: BOLD, color: C.text }}
           />
           <TextWidget
-            text={fallback ? 'Tocá para abrir la app' : 'Tocá para agregar la primera'}
+            text={fallback ? w.fallbackText : w.emptyText}
             style={{ fontSize: 12, fontFamily: MEDIUM, color: C.muted }}
           />
         </FlexWidget>
